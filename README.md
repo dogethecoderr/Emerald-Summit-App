@@ -172,6 +172,7 @@ lib/
 - [x] Brand theme (Emerald color system)
 - [x] Role-selection homescreen (Participant, Ambassador, Expert, Admin, Parent)
 - [x] Per-role login UI (Google + email magic link placeholders)
+- [x] Supabase `users` table migration with RLS policies
 - [ ] Backend integration (Supabase / Firebase)
 - [ ] Authentication
 - [ ] Schedule builder
