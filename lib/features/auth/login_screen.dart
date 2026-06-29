@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../core/config/app_env.dart';
 import '../../core/models/user_role.dart';
+import '../../core/services/auth_service.dart';
 import '../../core/theme/app_colors.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -16,6 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
+  bool _linkSent = false;
 
   @override
   void dispose() {
@@ -24,29 +28,71 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _signInWithGoogle() async {
+    if (!AppEnv.isConfigured) {
+      _showSetupHelp();
+      return;
+    }
+
     setState(() => _isLoading = true);
-    await Future<void>.delayed(const Duration(milliseconds: 800));
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-    _showComingSoon('Google sign-in');
+    try {
+      await AuthService.signInWithGoogle(role: widget.role);
+    } on AuthException catch (error) {
+      _showMessage(error.message);
+    } catch (error) {
+      _showMessage('Google sign-in failed: $error');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _sendMagicLink() async {
+    if (!AppEnv.isConfigured) {
+      _showSetupHelp();
+      return;
+    }
+
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
-    await Future<void>.delayed(const Duration(milliseconds: 800));
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-    _showComingSoon('Magic link sent to ${_emailController.text.trim()}');
+    try {
+      await AuthService.sendMagicLink(
+        email: _emailController.text.trim(),
+        role: widget.role,
+      );
+      if (!mounted) return;
+      setState(() => _linkSent = true);
+      _showMessage('Check your email for the sign-in link.');
+    } on AuthException catch (error) {
+      _showMessage(error.message);
+    } catch (error) {
+      _showMessage('Could not send magic link: $error');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
-  void _showComingSoon(String message) {
+  void _showMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+
+  void _showSetupHelp() {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Supabase not configured'),
+        content: Text(AppEnv.setupMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
       ),
     );
   }
@@ -65,6 +111,10 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                if (!AppEnv.isConfigured) ...[
+                  const _SetupBanner(),
+                  const SizedBox(height: 20),
+                ],
                 _RoleBanner(role: widget.role),
                 const SizedBox(height: 32),
                 OutlinedButton.icon(
@@ -75,7 +125,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 24),
                 Row(
                   children: [
-                    Expanded(child: Divider(color: AppColors.ink.withValues(alpha: 0.15))),
+                    Expanded(
+                      child: Divider(color: AppColors.ink.withValues(alpha: 0.15)),
+                    ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       child: Text(
@@ -83,7 +135,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ),
-                    Expanded(child: Divider(color: AppColors.ink.withValues(alpha: 0.15))),
+                    Expanded(
+                      child: Divider(color: AppColors.ink.withValues(alpha: 0.15)),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 24),
@@ -127,12 +181,15 @@ class _LoginScreenState extends State<LoginScreen> {
                             color: AppColors.white,
                           ),
                         )
-                      : const Text('Send magic link'),
+                      : Text(_linkSent ? 'Resend magic link' : 'Send magic link'),
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'We\'ll send a one-time sign-in link to your email. '
-                  'Your ${widget.role.label.toLowerCase()} role will be saved to your profile.',
+                  _linkSent
+                      ? 'We sent a one-time link to ${_emailController.text.trim()}. '
+                          'Open it in this browser to finish signing in.'
+                      : 'We\'ll send a one-time sign-in link to your email. '
+                          'Your ${widget.role.label.toLowerCase()} role will be saved to your profile.',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
@@ -140,6 +197,38 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _SetupBanner extends StatelessWidget {
+  const _SetupBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.amber.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.amber.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Add Supabase credentials',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Copy .env.example to .env, then paste your Project URL and '
+            'anon key from Supabase → Project Settings → API.',
+          ),
+        ],
       ),
     );
   }
