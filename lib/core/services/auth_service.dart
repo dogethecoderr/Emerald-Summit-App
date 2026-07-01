@@ -1,7 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../config/app_env.dart';
 import '../models/user_role.dart';
+import 'auth_callback_handler.dart';
 
 abstract final class AuthService {
   static const _pendingRoleKey = 'pending_user_role';
@@ -11,6 +14,9 @@ abstract final class AuthService {
   static Session? get session => client.auth.currentSession;
 
   static bool get isSignedIn => session != null;
+
+  static Stream<AuthState> get authStateChanges =>
+      client.auth.onAuthStateChange;
 
   static Future<void> savePendingRole(UserRole role) async {
     final prefs = await SharedPreferences.getInstance();
@@ -36,7 +42,7 @@ abstract final class AuthService {
     await savePendingRole(role);
     await client.auth.signInWithOtp(
       email: email.trim(),
-      emailRedirectTo: Uri.base.origin,
+      emailRedirectTo: AuthCallbackHandler.redirectUrl,
     );
   }
 
@@ -44,7 +50,13 @@ abstract final class AuthService {
     await savePendingRole(role);
     await client.auth.signInWithOAuth(
       OAuthProvider.google,
-      redirectTo: Uri.base.origin,
+      redirectTo: AuthCallbackHandler.redirectUrl,
+      authScreenLaunchMode:
+          kIsWeb ? LaunchMode.platformDefault : LaunchMode.externalApplication,
+      queryParams: const {
+        // Force Google to show the account picker instead of silent SSO.
+        'prompt': 'select_account',
+      },
     );
   }
 
@@ -84,5 +96,18 @@ abstract final class AuthService {
     });
   }
 
-  static Future<void> signOut() => client.auth.signOut();
+  static Future<Map<String, dynamic>?> getCurrentProfile() async {
+    final user = client.auth.currentUser;
+    if (user == null) return null;
+
+    return client.from('users').select().eq('id', user.id).maybeSingle();
+  }
+
+  static Future<void> signOut() async {
+    await client.auth.signOut(scope: SignOutScope.local);
+    if (kIsWeb && AppEnv.isConfigured) {
+      AuthCallbackHandler.clearWebAuthParams();
+      AuthCallbackHandler.clearWebSessionStorage(AppEnv.supabaseUrl);
+    }
+  }
 }

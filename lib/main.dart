@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/config/app_env.dart';
+import 'core/services/auth_callback_handler.dart';
 import 'core/services/auth_service.dart';
 import 'core/theme/app_theme.dart';
 import 'features/home/home_screen.dart';
@@ -12,30 +13,55 @@ Future<void> main() async {
 
   try {
     await dotenv.load(fileName: '.env');
-  } catch (_) {
-    // .env missing — AppEnv.isConfigured will be false.
+  } catch (error) {
+    debugPrint('Could not load .env: $error');
   }
 
   if (AppEnv.isConfigured) {
     await Supabase.initialize(
       url: AppEnv.supabaseUrl,
       publishableKey: AppEnv.supabaseAnonKey,
+      authOptions: const FlutterAuthClientOptions(
+        authFlowType: AuthFlowType.pkce,
+      ),
     );
+
+    // Must run before profile sync — exchanges OAuth code in the URL for a session.
+    await AuthCallbackHandler.handleWebRedirectIfPresent();
+    await _recoverFromInvalidSession();
     await _syncProfileIfNeeded();
-    Supabase.instance.client.auth.onAuthStateChange.listen((_) {
-      _syncProfileIfNeeded();
+
+    Supabase.instance.client.auth.onAuthStateChange.listen((event) async {
+      if (event.event == AuthChangeEvent.signedIn ||
+          event.event == AuthChangeEvent.tokenRefreshed) {
+        await _syncProfileIfNeeded();
+      }
     });
+  } else {
+    debugPrint(AppEnv.setupMessage);
   }
 
   runApp(const EmeraldSummitApp());
+}
+
+Future<void> _recoverFromInvalidSession() async {
+  final session = Supabase.instance.client.auth.currentSession;
+  if (session == null) return;
+
+  try {
+    await Supabase.instance.client.auth.refreshSession();
+  } on AuthException catch (error) {
+    debugPrint('Clearing invalid auth session: ${error.message}');
+    await Supabase.instance.client.auth.signOut();
+  }
 }
 
 Future<void> _syncProfileIfNeeded() async {
   if (!AuthService.isSignedIn) return;
   try {
     await AuthService.ensureUserProfile();
-  } on AuthException {
-    // Profile sync can fail if role wasn't saved; login flow handles that.
+  } on AuthException catch (error) {
+    debugPrint('Profile sync skipped: ${error.message}');
   }
 }
 
