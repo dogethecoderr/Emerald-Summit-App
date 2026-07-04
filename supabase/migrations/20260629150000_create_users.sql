@@ -10,7 +10,7 @@ create type public.user_role as enum (
   'ambassador',
   'expert',
   'admin',
-  'parent'
+  'visitor'
 );
 
 comment on type public.user_role is
@@ -52,7 +52,7 @@ create table public.users (
 );
 
 comment on table public.users is
-  'All app users across every role (participant, ambassador, expert, admin, parent).';
+  'All app users across every role (participant, ambassador, expert, admin, visitor).';
 
 comment on column public.users.role is
   'Role selected at sign-in; ambassador/expert elevated by admin as needed.';
@@ -147,7 +147,7 @@ create policy "users_insert_own"
       'participant'::public.user_role,
       'ambassador'::public.user_role,
       'expert'::public.user_role,
-      'parent'::public.user_role
+      'visitor'::public.user_role
     )
   );
 

@@ -268,51 +268,39 @@ class _Header extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 28),
-          Text(
-            'Summit \'27',
-            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                  fontSize: 34,
+          if (isSignedIn) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [AppColors.emerald, AppColors.deepEmerald],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'January 2027 · Emerald High, Dublin CA',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-          const SizedBox(height: 20),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [AppColors.emerald, AppColors.deepEmerald],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+                borderRadius: BorderRadius.circular(16),
               ),
-              borderRadius: BorderRadius.circular(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'You\'re in',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: AppColors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Your account is ready. More features coming soon.',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppColors.white.withValues(alpha: 0.9),
+                        ),
+                  ),
+                ],
+              ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  isSignedIn ? 'You\'re in' : 'Welcome',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: AppColors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  isSignedIn
-                      ? 'Your account is ready. More features coming soon.'
-                      : 'Choose your role to sign in and get started.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.white.withValues(alpha: 0.9),
-                      ),
-                ),
-              ],
-            ),
-          ),
+          ],
           if (!isSignedIn) ...[
             const SizedBox(height: 24),
             Text(

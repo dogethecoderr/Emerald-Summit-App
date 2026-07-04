@@ -6,7 +6,7 @@ import 'core/config/app_env.dart';
 import 'core/services/auth_callback_handler.dart';
 import 'core/services/auth_service.dart';
 import 'core/theme/app_theme.dart';
-import 'features/home/home_screen.dart';
+import 'features/welcome/welcome_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -74,7 +74,7 @@ class EmeraldSummitApp extends StatelessWidget {
       title: 'Emerald Summit',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
-      home: const HomeScreen(),
+      home: const WelcomeScreen(),
     );
   }
 }

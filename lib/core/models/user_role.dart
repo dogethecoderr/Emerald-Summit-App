@@ -21,10 +21,10 @@ enum UserRole {
     description: 'Check in attendees, manage people, and broadcast announcements.',
     icon: Icons.admin_panel_settings_outlined,
   ),
-  parent(
-    label: 'Parent',
-    description: 'Follow your student\'s day and receive activity updates.',
-    icon: Icons.family_restroom_outlined,
+  visitor(
+    label: 'Visitor',
+    description: 'Browse the event and follow activities as a guest.',
+    icon: Icons.badge_outlined,
   );
 
   const UserRole({
