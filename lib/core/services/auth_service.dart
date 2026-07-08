@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/app_env.dart';
+import '../models/discipline.dart';
 import '../models/user_role.dart';
 import 'auth_callback_handler.dart';
 
@@ -60,40 +61,53 @@ abstract final class AuthService {
     );
   }
 
-  static Future<void> ensureUserProfile() async {
+  static Future<void> saveProfile({
+    required String name,
+    String? phone,
+    UserDiscipline? discipline,
+    String? bio,
+  }) async {
     final user = client.auth.currentUser;
-    if (user == null) return;
-
-    final existing = await client
-        .from('users')
-        .select('id')
-        .eq('id', user.id)
-        .maybeSingle();
-    if (existing != null) return;
-
-    final pendingRole = await takePendingRole();
-    if (pendingRole == null) {
-      throw const AuthException(
-        'No role selected. Go back, pick a role, and sign in again.',
-      );
-    }
+    if (user == null) throw const AuthException('Not signed in.');
 
     final email = user.email;
     if (email == null || email.isEmpty) {
       throw const AuthException('Signed-in account has no email address.');
     }
 
-    final metadataName = user.userMetadata?['full_name'] as String?;
-    final name = (metadataName != null && metadataName.trim().isNotEmpty)
-        ? metadataName.trim()
-        : email.split('@').first;
-
-    await client.from('users').insert({
-      'id': user.id,
+    final payload = <String, dynamic>{
       'name': name,
-      'role': pendingRole.name,
-      'email': email,
-    });
+      'profile_setup_complete': true,
+      if (phone != null && phone.isNotEmpty) 'phone': phone,
+      if (discipline != null) 'discipline': discipline.name,
+      if (bio != null && bio.isNotEmpty) 'bio': bio,
+    };
+
+    final existing = await getCurrentProfile();
+    if (existing == null) {
+      final pendingRole = await takePendingRole();
+      if (pendingRole == null) {
+        throw const AuthException(
+          'No role selected. Go back, pick a role, and sign in again.',
+        );
+      }
+
+      await client.from('users').insert({
+        'id': user.id,
+        'role': pendingRole.name,
+        'email': email,
+        ...payload,
+      });
+      return;
+    }
+
+    await client.from('users').update(payload).eq('id', user.id);
+  }
+
+  /// True when the user still needs to finish the profile-setup screen.
+  static bool needsProfileSetup(Map<String, dynamic>? profile) {
+    if (profile == null) return true;
+    return profile['profile_setup_complete'] != true;
   }
 
   static Future<Map<String, dynamic>?> getCurrentProfile() async {

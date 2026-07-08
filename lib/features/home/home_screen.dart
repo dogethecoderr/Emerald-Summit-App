@@ -6,6 +6,7 @@ import '../../core/models/user_role.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../auth/login_screen.dart';
+import '../profile/profile_setup_screen.dart';
 import 'widgets/role_card.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -40,6 +41,7 @@ class _HomeContent extends StatefulWidget {
 
 class _HomeContentState extends State<_HomeContent> {
   Map<String, dynamic>? _profile;
+  bool _isLoadingProfile = true;
   bool _isSigningOut = false;
 
   @override
@@ -55,7 +57,10 @@ class _HomeContentState extends State<_HomeContent> {
       if (widget.isSignedIn) {
         _loadProfile();
       } else {
-        setState(() => _profile = null);
+        setState(() {
+          _profile = null;
+          _isLoadingProfile = false;
+        });
       }
     }
   }
@@ -66,9 +71,13 @@ class _HomeContentState extends State<_HomeContent> {
       return;
     }
 
+    setState(() => _isLoadingProfile = true);
     final profile = await AuthService.getCurrentProfile();
     if (!mounted) return;
-    setState(() => _profile = profile);
+    setState(() {
+      _profile = profile;
+      _isLoadingProfile = false;
+    });
   }
 
   Future<void> _signOut() async {
@@ -95,6 +104,19 @@ class _HomeContentState extends State<_HomeContent> {
   Widget build(BuildContext context) {
     final isSignedIn = widget.isSignedIn;
 
+    if (isSignedIn && _isLoadingProfile) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (isSignedIn && AuthService.needsProfileSetup(_profile)) {
+      return ProfileSetupScreen(
+        existingProfile: _profile,
+        onComplete: _loadProfile,
+      );
+    }
+
     return Scaffold(
       body: SafeArea(
         child: CustomScrollView(
@@ -102,17 +124,11 @@ class _HomeContentState extends State<_HomeContent> {
             SliverToBoxAdapter(
               child: _Header(
                 isSignedIn: isSignedIn,
+                email: _profile?['email'] as String?,
                 isSigningOut: _isSigningOut,
                 onSignOut: _signOut,
               ),
             ),
-            if (isSignedIn && _profile != null)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-                  child: _SignedInBanner(profile: _profile!),
-                ),
-              ),
             if (!isSignedIn)
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
@@ -158,64 +174,18 @@ class _UnconfiguredHomeScreen extends StatelessWidget {
   }
 }
 
-class _SignedInBanner extends StatelessWidget {
-  const _SignedInBanner({required this.profile});
-
-  final Map<String, dynamic> profile;
-
-  @override
-  Widget build(BuildContext context) {
-    final name = profile['name'] as String? ?? 'User';
-    final role = profile['role'] as String? ?? 'participant';
-    final email = profile['email'] as String? ?? '';
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.emerald.withValues(alpha: 0.2)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.check_circle, color: AppColors.emerald),
-              const SizedBox(width: 8),
-              Text(
-                'Signed in',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.emerald,
-                    ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(name, style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: 4),
-          Text(
-            '$role · $email',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _Header extends StatelessWidget {
   const _Header({
     required this.isSignedIn,
     required this.isSigningOut,
     required this.onSignOut,
+    this.email,
   });
 
   final bool isSignedIn;
   final bool isSigningOut;
   final VoidCallback onSignOut;
+  final String? email;
 
   @override
   Widget build(BuildContext context) {
@@ -261,9 +231,23 @@ class _Header extends StatelessWidget {
                 ),
               ),
               if (isSignedIn)
-                TextButton(
-                  onPressed: isSigningOut ? null : onSignOut,
-                  child: Text(isSigningOut ? 'Signing out…' : 'Sign out'),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    if (email != null && email!.isNotEmpty)
+                      Text(
+                        email!,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppColors.inkMuted,
+                            ),
+                      ),
+                    TextButton(
+                      onPressed: isSigningOut ? null : onSignOut,
+                      child: Text(
+                        isSigningOut ? 'Signing out…' : 'Sign out',
+                      ),
+                    ),
+                  ],
                 ),
             ],
           ),

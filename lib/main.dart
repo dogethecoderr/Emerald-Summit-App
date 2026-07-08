@@ -6,6 +6,7 @@ import 'core/config/app_env.dart';
 import 'core/services/auth_callback_handler.dart';
 import 'core/services/auth_service.dart';
 import 'core/theme/app_theme.dart';
+import 'features/home/home_screen.dart';
 import 'features/welcome/welcome_screen.dart';
 
 Future<void> main() async {
@@ -26,17 +27,9 @@ Future<void> main() async {
       ),
     );
 
-    // Must run before profile sync — exchanges OAuth code in the URL for a session.
+    // Exchanges OAuth code in the URL for a session.
     await AuthCallbackHandler.handleWebRedirectIfPresent();
     await _recoverFromInvalidSession();
-    await _syncProfileIfNeeded();
-
-    Supabase.instance.client.auth.onAuthStateChange.listen((event) async {
-      if (event.event == AuthChangeEvent.signedIn ||
-          event.event == AuthChangeEvent.tokenRefreshed) {
-        await _syncProfileIfNeeded();
-      }
-    });
   } else {
     debugPrint(AppEnv.setupMessage);
   }
@@ -56,15 +49,6 @@ Future<void> _recoverFromInvalidSession() async {
   }
 }
 
-Future<void> _syncProfileIfNeeded() async {
-  if (!AuthService.isSignedIn) return;
-  try {
-    await AuthService.ensureUserProfile();
-  } on AuthException catch (error) {
-    debugPrint('Profile sync skipped: ${error.message}');
-  }
-}
-
 class EmeraldSummitApp extends StatelessWidget {
   const EmeraldSummitApp({super.key});
 
@@ -74,7 +58,29 @@ class EmeraldSummitApp extends StatelessWidget {
       title: 'Emerald Summit',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
-      home: const WelcomeScreen(),
+      home: const _AppEntry(),
+    );
+  }
+}
+
+/// Sends signed-in users (e.g. after an OAuth redirect reload) straight to
+/// [HomeScreen], which shows profile setup when no row exists yet.
+class _AppEntry extends StatelessWidget {
+  const _AppEntry();
+
+  @override
+  Widget build(BuildContext context) {
+    if (!AppEnv.isConfigured) {
+      return const WelcomeScreen();
+    }
+
+    return StreamBuilder<AuthState>(
+      stream: AuthService.authStateChanges,
+      builder: (context, snapshot) {
+        final session = snapshot.data?.session ?? AuthService.session;
+        if (session != null) return const HomeScreen();
+        return const WelcomeScreen();
+      },
     );
   }
 }
