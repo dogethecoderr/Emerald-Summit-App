@@ -1,0 +1,219 @@
+/* Design tokens ported from flutter/lib/core/theme/app_colors.dart + app_theme.dart */
+:root {
+  --emerald: #0c7a55;
+  --deep-emerald: #0a5f43;
+  --ink: #16211c;
+  --mist: #eef5f1;
+  --white: #ffffff;
+  --ink-muted: #4a5c54;
+
+  --radius: 12px;
+  --radius-lg: 16px;
+
+  /* Fluid scale: grows with viewport width instead of jumping at one
+     breakpoint, so layout "zooms in" continuously on larger screens. */
+  --container-narrow: min(640px, 92vw);
+  --container-wide: min(1200px, 94vw);
+
+  --fs-body: clamp(1rem, 0.94rem + 0.3vw, 1.2rem);
+  --fs-sm: clamp(0.85rem, 0.8rem + 0.22vw, 1.05rem);
+  --fs-md: clamp(1.05rem, 0.95rem + 0.45vw, 1.4rem);
+  --fs-lg: clamp(1.3rem, 1.1rem + 0.9vw, 1.9rem);
+  --fs-xl: clamp(1.8rem, 1.4rem + 1.8vw, 2.6rem);
+  --fs-hero: clamp(2.4rem, 1.6rem + 3.8vw, 4.2rem);
+
+  --space-sm: clamp(10px, 0.5vw + 7px, 16px);
+  --space-md: clamp(16px, 1vw + 11px, 28px);
+  --space-lg: clamp(24px, 1.6vw + 16px, 44px);
+  --space-xl: clamp(32px, 2.8vw + 18px, 72px);
+
+  --logo-size: clamp(44px, 3vw + 34px, 64px);
+
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica,
+    Arial, sans-serif;
+  font-size: var(--fs-body);
+  color: var(--ink);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background: var(--mist);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ---- Shared form controls (mirror app_theme.dart) ---- */
+.field-label {
+  display: block;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.text-input {
+  width: 100%;
+  padding: clamp(14px, 0.9vw, 18px) clamp(16px, 1vw, 20px);
+  font-size: var(--fs-body);
+  color: var(--ink);
+  background: var(--white);
+  border: 1px solid rgba(22, 33, 28, 0.08);
+  border-radius: var(--radius);
+  outline: none;
+  transition: border-color 0.15s ease;
+  font-family: inherit;
+}
+
+.text-input::placeholder {
+  color: var(--ink-muted);
+  opacity: 0.7;
+}
+
+.text-input:focus {
+  border-color: var(--emerald);
+  border-width: 2px;
+}
+
+textarea.text-input {
+  resize: vertical;
+  min-height: 96px;
+}
+
+/* Text input with a leading icon (mirrors Flutter's prefixIcon) */
+.input-with-icon {
+  position: relative;
+}
+
+.input-with-icon .text-input {
+  padding-left: clamp(42px, 3vw, 52px);
+}
+
+.input-with-icon__icon {
+  position: absolute;
+  left: clamp(12px, 1vw, 16px);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  pointer-events: none;
+  color: var(--ink-muted);
+}
+
+.input-with-icon__icon svg {
+  width: clamp(16px, 1.1vw, 20px);
+  height: clamp(16px, 1.1vw, 20px);
+}
+
+/* Filled (primary) button */
+.btn-filled {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: clamp(14px, 0.9vw, 18px) 24px;
+  font-size: var(--fs-body);
+  font-weight: 600;
+  color: var(--white);
+  background: var(--emerald);
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.btn-filled:disabled {
+  background: rgba(12, 122, 85, 0.4);
+  cursor: not-allowed;
+}
+
+/* Outlined button */
+.btn-outlined {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: clamp(14px, 0.9vw, 18px) 24px;
+  font-size: var(--fs-body);
+  font-weight: 600;
+  color: var(--emerald);
+  background: transparent;
+  border: 1px solid var(--emerald);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.btn-outlined:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Text button */
+.btn-text {
+  background: none;
+  border: none;
+  color: var(--emerald);
+  font-weight: 600;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+  font-family: inherit;
+  padding: 6px 8px;
+}
+
+.btn-text:disabled {
+  color: var(--ink-muted);
+  cursor: not-allowed;
+}
+
+/* Spinner */
+.spinner {
+  width: 22px;
+  height: 22px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: var(--white);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+.spinner-emerald {
+  border-color: rgba(12, 122, 85, 0.25);
+  border-top-color: var(--emerald);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Toast (snackbar equivalent) */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  max-width: 90%;
+  background: var(--ink);
+  color: var(--white);
+  padding: 12px 18px;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  z-index: 100;
+  font-size: 0.9rem;
+}

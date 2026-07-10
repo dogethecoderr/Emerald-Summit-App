@@ -50,3 +50,8 @@ supabase/.temp
 
 # Local secrets (copy from .env.example)
 .env
+
+# React / Vite (web app at repo root)
+node_modules/
+dist/
+*.tsbuildinfo

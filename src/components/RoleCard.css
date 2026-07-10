@@ -1,0 +1,64 @@
+.role-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  width: 100%;
+  text-align: left;
+  padding: var(--space-md) var(--space-lg);
+  background: var(--white);
+  border: 1px solid rgba(22, 33, 28, 0.06);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.role-card:hover {
+  border-color: rgba(12, 122, 85, 0.3);
+  box-shadow: 0 4px 16px rgba(22, 33, 28, 0.06);
+}
+
+.role-card__icon {
+  flex: 0 0 auto;
+  width: clamp(48px, 3vw, 60px);
+  height: clamp(48px, 3vw, 60px);
+  display: grid;
+  place-items: center;
+  background: rgba(12, 122, 85, 0.1);
+  border-radius: var(--radius);
+}
+
+.role-card__icon svg {
+  width: 54%;
+  height: 54%;
+}
+
+.role-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.role-card__label {
+  font-weight: 600;
+  font-size: var(--fs-md);
+  color: var(--ink);
+}
+
+.role-card__desc {
+  font-size: var(--fs-sm);
+  line-height: 1.4;
+  color: var(--ink-muted);
+}
+
+.role-card__chevron {
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: var(--ink-muted);
+}
+
+.role-card__chevron svg {
+  width: clamp(16px, 1.2vw, 22px);
+  height: clamp(16px, 1.2vw, 22px);
+}

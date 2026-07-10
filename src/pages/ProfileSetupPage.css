@@ -1,0 +1,111 @@
+.profile {
+  min-height: 100vh;
+  background: var(--mist);
+}
+
+.profile__topbar {
+  padding: var(--space-md) var(--space-md) 0;
+  max-width: var(--container-wide);
+  margin: 0 auto;
+}
+
+.profile__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.profile__brand-icon {
+  flex: 0 0 auto;
+  width: var(--logo-size);
+  height: var(--logo-size);
+  padding: clamp(8px, 0.7vw, 12px);
+  display: grid;
+  place-items: center;
+  background: var(--emerald);
+  border-radius: var(--radius);
+}
+
+.profile__brand-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.profile__brand-title {
+  font-weight: 700;
+  font-size: var(--fs-lg);
+  color: var(--ink);
+}
+
+.profile__brand-sub {
+  font-size: var(--fs-sm);
+  color: var(--ink-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile__inner {
+  max-width: 780px;
+  margin: var(--space-lg) auto var(--space-xl);
+  padding: var(--space-xl) var(--space-lg);
+  background: var(--white);
+  border: 1px solid rgba(22, 33, 28, 0.06);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 12px 40px rgba(22, 33, 28, 0.05);
+}
+
+.profile__heading {
+  margin: 0;
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.profile__subheading {
+  margin: 4px 0 var(--space-lg);
+  font-size: var(--fs-sm);
+  color: var(--ink-muted);
+}
+
+.profile__spaced {
+  margin-top: var(--space-md);
+}
+
+.profile__hint {
+  margin: 4px 0 var(--space-sm);
+  font-size: var(--fs-sm);
+  color: var(--ink-muted);
+}
+
+.profile__disciplines {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--space-sm);
+}
+
+.profile__counter {
+  margin-top: 6px;
+  text-align: right;
+  font-size: var(--fs-sm);
+  color: var(--ink-muted);
+}
+
+.profile__counter--over {
+  color: #d32f2f;
+}
+
+.profile__error {
+  margin-top: 4px;
+  font-size: var(--fs-sm);
+  color: #d32f2f;
+}
+
+.profile__submit {
+  margin-top: var(--space-md);
+  width: auto;
+  padding-left: 40px;
+  padding-right: 40px;
+}
