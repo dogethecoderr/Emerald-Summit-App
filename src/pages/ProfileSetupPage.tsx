@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { User, Phone } from 'lucide-react';
+import { User, Phone, Check } from 'lucide-react';
+import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
 import { USER_DISCIPLINES } from '../models/disciplines';
 import { needsProfileSetup, saveProfile, signOut } from '../services/auth';
-import { supabase } from '../lib/supabase';
-import DisciplineCard from '../components/DisciplineCard';
 import SummitLogo from '../components/SummitLogo';
-import { useToast } from '../components/useToast';
-import './ProfileSetupPage.css';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
 
 const BIO_WORD_LIMIT = 30;
 
@@ -21,7 +23,6 @@ function wordCount(text: string): number {
 export default function ProfileSetupPage() {
   const { session, profile, loadingProfile, refreshProfile } = useAuth();
   const navigate = useNavigate();
-  const { toast, showToast } = useToast();
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -29,12 +30,11 @@ export default function ProfileSetupPage() {
   const [selectedDiscipline, setSelectedDiscipline] = useState<string | null>(
     null,
   );
-  const [bioError, setBioError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [prefilled, setPrefilled] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
 
-  // Prefill from an existing profile, else from Google full_name metadata.
+  // Prefill from an existing profile, else from the mock account's name hint.
   useEffect(() => {
     if (prefilled || loadingProfile) return;
 
@@ -49,20 +49,17 @@ export default function ProfileSetupPage() {
       if (disciplineName) setSelectedDiscipline(disciplineName);
       setPrefilled(true);
     } else {
-      supabase.auth.getUser().then(({ data }) => {
-        const metadataName = data.user?.user_metadata?.full_name as
-          | string
-          | undefined;
-        if (metadataName && metadataName.trim().length > 0) {
-          setName(metadataName.trim());
-        }
-        setPrefilled(true);
-      });
+      const metadataName = session?.user.fullName?.trim();
+      if (metadataName && metadataName.length > 0) {
+        setName(metadataName);
+      }
+      setPrefilled(true);
     }
-  }, [profile, loadingProfile, prefilled]);
+  }, [profile, loadingProfile, prefilled, session]);
 
   const bioWords = useMemo(() => wordCount(bio), [bio]);
-  const canSave = name.trim().length > 0 && !isSaving;
+  const canSave =
+    name.trim().length > 0 && bioWords <= BIO_WORD_LIMIT && !isSaving;
 
   if (!loadingProfile && session == null) {
     return <Navigate to="/" replace />;
@@ -79,16 +76,12 @@ export default function ProfileSetupPage() {
       await signOut();
     } catch (error) {
       setIsSigningOut(false);
-      showToast(`Sign out failed: ${error}`);
+      toast.error(`Sign out failed: ${error}`);
     }
   };
 
   const handleSave = async () => {
-    if (bioWords > BIO_WORD_LIMIT) {
-      setBioError(`Keep your bio under ${BIO_WORD_LIMIT} words`);
-      return;
-    }
-    setBioError(null);
+    if (bioWords > BIO_WORD_LIMIT) return;
     if (name.trim().length === 0) return;
 
     setIsSaving(true);
@@ -102,125 +95,184 @@ export default function ProfileSetupPage() {
       await refreshProfile();
       navigate('/home');
     } catch (error) {
-      showToast(`Could not save profile: ${error}`);
+      toast.error(`Could not save profile: ${error}`);
     } finally {
       setIsSaving(false);
     }
   };
 
   return (
-    <div className="profile">
-      {toast}
-      <header className="profile__topbar">
-        <div className="profile__brand">
-          <div className="profile__brand-icon" aria-hidden>
-            <SummitLogo background="none" iconColor="var(--white)" />
+    <div className="relative min-h-screen overflow-hidden">
+      <div
+        className="pointer-events-none absolute -top-32 left-[-10%] h-[420px] w-[420px] rounded-full opacity-25 blur-3xl"
+        style={{ background: 'radial-gradient(circle, #0C7A55 0%, transparent 65%)' }}
+        aria-hidden
+      />
+
+      <div className="relative mx-auto max-w-xl px-6 pb-20">
+        <header className="flex items-center justify-between py-5">
+          <div className="flex items-center gap-2.5">
+            <div className="h-8 w-8">
+              <SummitLogo />
+            </div>
+            <div className="leading-tight">
+              <div className="font-display text-sm font-semibold">
+                Emerald Summit
+              </div>
+              <div className="text-[11px] text-muted-foreground">
+                {session?.user.email ?? ''}
+              </div>
+            </div>
           </div>
-          <div className="profile__brand-text">
-            <span className="profile__brand-title">Emerald Summit</span>
-            <span className="profile__brand-sub">
-              {session?.user.email ?? ''}
-            </span>
-          </div>
-          <button
-            className="btn-text"
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground hover:text-foreground"
             onClick={handleSignOut}
             disabled={isSigningOut}
           >
             {isSigningOut ? 'Signing out…' : 'Sign out'}
-          </button>
-        </div>
-      </header>
+          </Button>
+        </header>
 
-      <div className="profile__inner">
-        <h2 className="profile__heading">Tell us a bit about yourself</h2>
-        <p className="profile__subheading">
-          Only your full name is required — the rest helps others find and
-          connect with you.
-        </p>
-
-        <label className="field-label" htmlFor="name">
-          Full name
-        </label>
-        <div className="input-with-icon">
-          <span className="input-with-icon__icon" aria-hidden>
-            <User />
-          </span>
-          <input
-            id="name"
-            className="text-input"
-            type="text"
-            autoComplete="name"
-            placeholder="Jordan Lee"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
+        <div className="animate-fade-up mt-6">
+          <h1 className="font-display text-3xl font-semibold tracking-tight">
+            Tell us a bit about yourself
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Only your full name is required — the rest helps others find and
+            connect with you.
+          </p>
         </div>
 
-        <label className="field-label profile__spaced" htmlFor="phone">
-          Phone (optional)
-        </label>
-        <div className="input-with-icon">
-          <span className="input-with-icon__icon" aria-hidden>
-            <Phone />
-          </span>
-          <input
-            id="phone"
-            className="text-input"
-            type="tel"
-            autoComplete="tel"
-            placeholder="(555) 123-4567"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-          />
-        </div>
+        <div className="animate-fade-up mt-8 space-y-6" style={{ animationDelay: '90ms' }}>
+          <div>
+            <Label htmlFor="name" className="mb-2 block text-[13px]">
+              Full name
+            </Label>
+            <div className="relative">
+              <User className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="name"
+                autoComplete="name"
+                placeholder="Jordan Lee"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="h-12 rounded-xl bg-secondary/40 pl-10 text-[15px]"
+              />
+            </div>
+          </div>
 
-        <label className="field-label profile__spaced">
-          Discipline (optional)
-        </label>
-        <p className="profile__hint">Pick the discipline that best fits you.</p>
-        <div className="profile__disciplines">
-          {USER_DISCIPLINES.map((d) => (
-            <DisciplineCard
-              key={d.name}
-              discipline={d}
-              isSelected={selectedDiscipline === d.name}
-              onClick={() =>
-                setSelectedDiscipline((current) =>
-                  current === d.name ? null : d.name,
-                )
-              }
+          <div>
+            <Label htmlFor="phone" className="mb-2 block text-[13px]">
+              Phone <span className="text-muted-foreground">(optional)</span>
+            </Label>
+            <div className="relative">
+              <Phone className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="phone"
+                type="tel"
+                autoComplete="tel"
+                placeholder="(555) 123-4567"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="h-12 rounded-xl bg-secondary/40 pl-10 text-[15px]"
+              />
+            </div>
+          </div>
+
+          <div>
+            <Label className="mb-1 block text-[13px]">
+              Discipline <span className="text-muted-foreground">(optional)</span>
+            </Label>
+            <p className="mb-3 text-xs text-muted-foreground">
+              Pick the universe that best fits you.
+            </p>
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+              {USER_DISCIPLINES.map((d) => {
+                const selected = selectedDiscipline === d.name;
+                return (
+                  <button
+                    key={d.name}
+                    type="button"
+                    onClick={() =>
+                      setSelectedDiscipline((current) =>
+                        current === d.name ? null : d.name,
+                      )
+                    }
+                    className={cn(
+                      'relative rounded-xl border p-3 text-left transition-all',
+                      selected
+                        ? 'border-transparent bg-accent'
+                        : 'border-border/70 bg-secondary/30 hover:bg-accent/50',
+                    )}
+                    style={
+                      selected
+                        ? { boxShadow: `inset 0 0 0 1.5px ${d.color}` }
+                        : undefined
+                    }
+                  >
+                    {selected && (
+                      <span
+                        className="absolute right-2 top-2 flex h-4 w-4 items-center justify-center rounded-full text-white"
+                        style={{ background: d.color }}
+                      >
+                        <Check className="h-3 w-3" strokeWidth={3} />
+                      </span>
+                    )}
+                    <span
+                      className="mb-1.5 block h-1.5 w-6 rounded-full"
+                      style={{ background: d.color }}
+                      aria-hidden
+                    />
+                    <span className="block text-[13px] font-semibold">
+                      {d.label}
+                    </span>
+                    <span className="mt-0.5 block text-[11px] leading-snug text-muted-foreground">
+                      {d.description}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="bio" className="mb-2 block text-[13px]">
+              Short bio <span className="text-muted-foreground">(optional)</span>
+            </Label>
+            <Textarea
+              id="bio"
+              rows={3}
+              placeholder="A sentence or two about yourself."
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              className="rounded-xl bg-secondary/40 text-[15px]"
             />
-          ))}
-        </div>
+            <div
+              className={cn(
+                'mt-1.5 text-right text-[11px] font-medium',
+                bioWords > BIO_WORD_LIMIT
+                  ? 'text-red-400'
+                  : 'text-muted-foreground',
+              )}
+            >
+              {bioWords}/{BIO_WORD_LIMIT} words
+            </div>
+          </div>
 
-        <label className="field-label profile__spaced" htmlFor="bio">
-          Short bio (optional)
-        </label>
-        <textarea
-          id="bio"
-          className="text-input"
-          rows={3}
-          placeholder="A sentence or two about yourself."
-          value={bio}
-          onChange={(e) => setBio(e.target.value)}
-        />
-        <div
-          className={`profile__counter${
-            bioWords > BIO_WORD_LIMIT ? ' profile__counter--over' : ''
-          }`}
-        >
-          {bioWords}/{BIO_WORD_LIMIT} words
+          <Button
+            className="glow-emerald h-12 w-full rounded-xl bg-primary text-[15px] font-semibold hover:bg-emerald"
+            onClick={handleSave}
+            disabled={!canSave}
+          >
+            {isSaving ? (
+              <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+            ) : (
+              'Continue'
+            )}
+          </Button>
         </div>
-        {bioError && <div className="profile__error">{bioError}</div>}
-
-        <button
-          className="btn-filled profile__submit"
-          onClick={handleSave}
-          disabled={!canSave}
-        >
-          {isSaving ? <span className="spinner" /> : 'Continue'}
-        </button>
       </div>
     </div>
   );

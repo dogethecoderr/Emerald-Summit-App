@@ -1,26 +1,179 @@
-import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { CheckCircle2 } from 'lucide-react';
+import {
+  ArrowRight,
+  CalendarDays,
+  ChevronRight,
+  ClipboardCheck,
+  Clock3,
+  Eye,
+  Gavel,
+  Paintbrush,
+  BookUser,
+  type LucideIcon,
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { USER_ROLES } from '../models/roles';
-import { needsProfileSetup, signOut } from '../services/auth';
-import RoleCard from '../components/RoleCard';
+import { USER_ROLES, roleByName } from '../models/roles';
+import { disciplineByName } from '../models/disciplines';
+import { MOCK_SESSIONS, TIME_SLOTS } from '../models/sessions';
+import { MOCK_ANNOUNCEMENTS } from '../models/announcements';
+import type { PersonStatus } from '../models/personStatus';
+import { needsProfileSetup } from '../services/auth';
+import { useSchedule } from '../context/ScheduleContext';
 import SummitLogo from '../components/SummitLogo';
-import { useToast } from '../components/useToast';
-import './HomePage.css';
+import AppShell from '../components/AppShell';
+import PageHeader from '../components/PageHeader';
+import FeaturedSessionsCard from '../components/FeaturedSessionsCard';
+import ProfileMiniCard from '../components/ProfileMiniCard';
+import AnnouncementsPanel from '../components/AnnouncementsPanel';
+import { Skeleton } from '@/components/ui/skeleton';
+
+// PLACEHOLDER: no backend field for validation/check-in status yet (see
+// src/models/personStatus.ts) — hardcoded until that flow is designed.
+const MOCK_STATUS: PersonStatus = 'validated';
+
+interface QuickAction {
+  to: string;
+  label: string;
+  sub: string;
+  icon: LucideIcon;
+}
+
+const QUICK_ACTIONS: Record<string, QuickAction[]> = {
+  participant: [
+    {
+      to: '/schedule',
+      label: 'Build your schedule',
+      sub: 'Reserve competitor or spectator seats',
+      icon: CalendarDays,
+    },
+  ],
+  ambassador: [
+    {
+      to: '/track',
+      label: 'Edit your track page',
+      sub: 'Keep your marketing page current',
+      icon: Paintbrush,
+    },
+    {
+      to: '/hours',
+      label: 'Log volunteer hours',
+      sub: 'Certificates generate automatically',
+      icon: Clock3,
+    },
+  ],
+  expert: [
+    {
+      to: '/judging',
+      label: 'View judging schedule',
+      sub: 'Rooms, times, and walking routes',
+      icon: Gavel,
+    },
+  ],
+  admin: [
+    {
+      to: '/checkin',
+      label: 'Open check-in desk',
+      sub: 'Live arrival counts by discipline',
+      icon: ClipboardCheck,
+    },
+    {
+      to: '/announcements',
+      label: 'Broadcast announcement',
+      sub: 'Push + feed + email in one send',
+      icon: ArrowRight,
+    },
+  ],
+  parent: [
+    {
+      to: '/student',
+      label: "Follow your student's day",
+      sub: 'Sessions, progress, and updates',
+      icon: BookUser,
+    },
+  ],
+};
+
+function RolePicker() {
+  const navigate = useNavigate();
+  return (
+    <div className="relative min-h-screen overflow-hidden">
+      <div
+        className="pointer-events-none absolute -top-32 left-1/2 h-[420px] w-[720px] -translate-x-1/2 rounded-full opacity-30 blur-3xl"
+        style={{ background: 'radial-gradient(ellipse, #0C7A55 0%, transparent 65%)' }}
+        aria-hidden
+      />
+      <div className="relative mx-auto max-w-3xl px-6 py-12">
+        <div className="flex items-center gap-2.5">
+          <div className="h-9 w-9">
+            <SummitLogo />
+          </div>
+          <div className="leading-tight">
+            <div className="font-display text-[15px] font-semibold">
+              Emerald Summit
+            </div>
+            <div className="text-[11px] text-muted-foreground">
+              EHS Academic Foundation
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-12">
+          <h1 className="font-display text-3xl font-semibold tracking-tight md:text-4xl">
+            Who are you at the summit?
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground md:text-[15px]">
+            Your role shapes what you see — pick the one that fits and sign in.
+          </p>
+        </div>
+
+        <div className="mt-8 space-y-3">
+          {USER_ROLES.map((r, i) => (
+            <button
+              key={r.name}
+              onClick={() => navigate(`/login/${r.name}`)}
+              className="glass animate-fade-up group flex w-full items-center gap-4 rounded-2xl p-4 text-left transition-all hover:translate-x-1 hover:border-emerald-glow/40 sm:p-5"
+              style={{ animationDelay: `${i * 70}ms` }}
+            >
+              <span
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset"
+                style={{
+                  background: `${r.color}1e`,
+                  color: r.color,
+                  boxShadow: `inset 0 0 0 1px ${r.color}44`,
+                }}
+              >
+                <r.icon className="h-5 w-5" strokeWidth={1.9} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block font-display text-[15px] font-semibold">
+                  {r.label}
+                </span>
+                <span className="mt-0.5 block text-[13px] leading-snug text-muted-foreground">
+                  {r.description}
+                </span>
+              </span>
+              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-all group-hover:translate-x-0.5 group-hover:text-emerald-mint" />
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function HomePage() {
   const { session, profile, loadingProfile } = useAuth();
   const navigate = useNavigate();
-  const { toast, showToast } = useToast();
-  const [isSigningOut, setIsSigningOut] = useState(false);
+  const { mySchedule, spectating } = useSchedule();
 
   const isSignedIn = session != null;
 
   if (isSignedIn && loadingProfile) {
     return (
-      <div className="home__loading">
-        <div className="spinner spinner-emerald" />
+      <div className="mx-auto max-w-3xl space-y-4 px-6 py-16">
+        <Skeleton className="h-10 w-64" />
+        <Skeleton className="h-40 w-full rounded-2xl" />
+        <Skeleton className="h-40 w-full rounded-2xl" />
       </div>
     );
   }
@@ -29,89 +182,100 @@ export default function HomePage() {
     return <Navigate to="/profile" replace />;
   }
 
-  const handleSignOut = async () => {
-    if (isSigningOut) return;
-    setIsSigningOut(true);
-    try {
-      await signOut();
-    } catch (error) {
-      setIsSigningOut(false);
-      showToast(`Sign out failed: ${error}`);
-    }
-  };
+  if (!isSignedIn) {
+    return <RolePicker />;
+  }
 
   const name = (profile?.name as string | undefined) ?? 'User';
-  const role = (profile?.role as string | undefined) ?? 'participant';
+  const firstName = name.split(/\s+/)[0];
+  const roleName = (profile?.role as string | undefined) ?? 'participant';
   const email = (profile?.email as string | undefined) ?? '';
+  const roleInfo = roleByName(roleName) ?? USER_ROLES[0];
+  const disciplineLabel = disciplineByName(
+    profile?.discipline as string | undefined,
+  )?.label;
+
+  const myCount = mySchedule.length;
+  const nextSession = MOCK_SESSIONS.filter(
+    (s) => mySchedule.includes(s.id) || spectating.includes(s.id),
+  ).sort((a, b) => TIME_SLOTS.indexOf(a.time) - TIME_SLOTS.indexOf(b.time))[0];
+
+  const actions = QUICK_ACTIONS[roleName] ?? QUICK_ACTIONS.participant;
+
+  const stats = [
+    { label: 'My sessions', value: String(myCount) },
+    { label: 'Spectating', value: String(spectating.length), icon: Eye },
+    {
+      label: 'Next up',
+      value: nextSession ? nextSession.time : '—',
+      sub: nextSession?.location,
+    },
+    { label: 'Tracks open', value: '20+' },
+  ];
 
   return (
-    <div className="home">
-      {toast}
-      <div className="home__inner">
-        <header className="home__header">
-          <div className="home__brand">
-            <div className="home__brand-icon" aria-hidden>
-              <SummitLogo background="none" iconColor="var(--white)" />
+    <AppShell>
+      <PageHeader
+        label="Emerald High School · Dublin, CA"
+        title={`Welcome back, ${firstName}.`}
+        sub="Everything about your summit day — schedule, people, and live updates — in one place."
+      />
+
+      {/* stat tiles */}
+      <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+        {stats.map((s) => (
+          <div key={s.label} className="glass rounded-2xl px-4 py-3.5">
+            <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              {s.label}
             </div>
-            <div className="home__brand-text">
-              <span className="home__brand-title">Emerald Summit</span>
-              <span className="home__brand-sub">EHS Academic Foundation</span>
+            <div className="mt-1 font-display text-2xl font-semibold text-emerald-mint">
+              {s.value}
             </div>
-            {isSignedIn && (
-              <button
-                className="btn-text"
-                onClick={handleSignOut}
-                disabled={isSigningOut}
-              >
-                {isSigningOut ? 'Signing out…' : 'Sign out'}
-              </button>
+            {s.sub && (
+              <div className="truncate text-[11px] text-muted-foreground">
+                {s.sub}
+              </div>
             )}
           </div>
-
-          {isSignedIn ? (
-            <div className="home__hero">
-              <span className="home__hero-title">You're in</span>
-              <span className="home__hero-sub">
-                Your account is ready. More features coming soon.
-              </span>
-            </div>
-          ) : (
-            <div className="home__intro">
-              <h2 className="home__intro-title">Sign in as</h2>
-              <p className="home__intro-sub">
-                Your role determines what you can see and do in the app.
-              </p>
-            </div>
-          )}
-        </header>
-
-        {isSignedIn && profile && (
-          <div className="home__signed-in">
-            <div className="home__signed-in-row">
-              <span className="home__check" aria-hidden>
-                <CheckCircle2 color="var(--emerald)" />
-              </span>
-              <span className="home__signed-in-label">Signed in</span>
-            </div>
-            <div className="home__signed-in-name">{name}</div>
-            <div className="home__signed-in-meta">
-              {role} · {email}
-            </div>
-          </div>
-        )}
-
-        {!isSignedIn && (
-          <div className="home__roles">
-            {USER_ROLES.map((r) => (
-              <RoleCard
-                key={r.name}
-                role={r}
-                onClick={() => navigate(`/login/${r.name}`)}
-              />
-            ))}
-          </div>
-        )}
+        ))}
       </div>
-    </div>
+
+      {/* role quick actions */}
+      <div className="mb-6 grid gap-3 sm:grid-cols-2">
+        {actions.map(({ to, label, sub, icon: Icon }) => (
+          <button
+            key={to + label}
+            onClick={() => navigate(to)}
+            className="group flex items-center gap-4 rounded-2xl border border-emerald-glow/25 bg-gradient-to-br from-emerald/20 to-emerald-deep/10 p-4 text-left transition-all hover:border-emerald-glow/50 hover:from-emerald/25"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald/25 text-emerald-mint">
+              <Icon className="h-5 w-5" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[14px] font-semibold">{label}</span>
+              <span className="block text-xs text-muted-foreground">{sub}</span>
+            </span>
+            <ArrowRight className="h-4 w-4 shrink-0 text-emerald-mint transition-transform group-hover:translate-x-0.5" />
+          </button>
+        ))}
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-[3fr_2fr]">
+        <FeaturedSessionsCard sessions={MOCK_SESSIONS.slice(0, 6)} />
+        <div className="space-y-6">
+          <ProfileMiniCard
+            name={name}
+            subtitle={disciplineLabel ?? email}
+            role={roleInfo}
+            status={MOCK_STATUS}
+          />
+          <AnnouncementsPanel
+            announcements={MOCK_ANNOUNCEMENTS}
+            variant="compact"
+            onViewAll={() => navigate('/announcements')}
+          />
+        </div>
+      </div>
+    </AppShell>
   );
 }

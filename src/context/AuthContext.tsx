@@ -5,12 +5,16 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import type { Session } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
-import { getCurrentProfile, type Profile } from '../services/auth';
+import {
+  getCurrentProfile,
+  getSession,
+  subscribeAuth,
+  type MockSession,
+  type Profile,
+} from '../services/auth';
 
 interface AuthContextValue {
-  session: Session | null;
+  session: MockSession | null;
   profile: Profile | null;
   loadingProfile: boolean;
   refreshProfile: () => Promise<void>;
@@ -19,7 +23,7 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
+  const [session, setSession] = useState<MockSession | null>(() => getSession());
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
 
@@ -36,36 +40,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    let active = true;
-
-    // Prime from any existing session, then load its profile.
-    supabase.auth.getSession().then(({ data }) => {
-      if (!active) return;
-      setSession(data.session);
-      if (data.session) {
+    // Re-sync whenever the mock store changes (sign in/out, profile save).
+    const sync = () => {
+      const current = getSession();
+      setSession(current);
+      if (current) {
         refreshProfile();
       } else {
-        setLoadingProfile(false);
-      }
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, nextSession) => {
-      if (!active) return;
-      setSession(nextSession);
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        refreshProfile();
-      } else if (event === 'SIGNED_OUT') {
         setProfile(null);
         setLoadingProfile(false);
       }
-    });
-
-    return () => {
-      active = false;
-      subscription.unsubscribe();
     };
+
+    sync();
+    return subscribeAuth(sync);
   }, []);
 
   return (

@@ -1,15 +1,67 @@
-// 1:1 port of flutter/lib/core/services/auth_service.dart
-import { supabase } from '../lib/supabase';
-
-const PENDING_ROLE_KEY = 'pending_user_role';
+// Mock auth — a localStorage-backed stand-in for Supabase so the whole
+// frontend runs and is fully testable in the browser with no backend.
+// The public surface mirrors what the pages need; swap the internals for
+// real Supabase auth later without touching the UI.
 
 export type Profile = Record<string, unknown>;
 
+export interface MockUser {
+  id: string;
+  email: string;
+  /** Prefill hint for the profile page (e.g. from a Google account). */
+  fullName?: string;
+}
+
+export interface MockSession {
+  user: MockUser;
+}
+
+const SESSION_KEY = 'mock_session';
+const PROFILE_KEY = 'mock_profiles'; // { [email]: Profile }
+const PENDING_ROLE_KEY = 'pending_user_role';
+
+// Tiny artificial latency so loading states/spinners are exercised.
+const FAKE_LATENCY_MS = 500;
+const wait = (ms = FAKE_LATENCY_MS) => new Promise((r) => setTimeout(r, ms));
+
+// ---- Change notification (AuthContext subscribes to this) ----
+type Listener = () => void;
+const listeners = new Set<Listener>();
+
+export function subscribeAuth(listener: Listener): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+function emit(): void {
+  listeners.forEach((l) => l());
+}
+
+// ---- Low-level storage helpers ----
+function readJSON<T>(key: string): T | null {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : null;
+  } catch {
+    return null;
+  }
+}
+
+function readProfiles(): Record<string, Profile> {
+  return readJSON<Record<string, Profile>>(PROFILE_KEY) ?? {};
+}
+
+function randomId(): string {
+  return 'u_' + Math.random().toString(36).slice(2, 10);
+}
+
+// ---- Pending role (chosen on the role screen, applied at profile save) ----
 export function savePendingRole(roleName: string): void {
   localStorage.setItem(PENDING_ROLE_KEY, roleName);
 }
 
-/** Read the pending role and clear it (matches Dart takePendingRole). */
 export function takePendingRole(): string | null {
   const value = localStorage.getItem(PENDING_ROLE_KEY);
   if (value == null) return null;
@@ -17,34 +69,42 @@ export function takePendingRole(): string | null {
   return value;
 }
 
-// Land straight on the profile-setup page after auth completes instead of
-// bouncing through Welcome/Home first; ProfileSetupPage forwards on to
-// /home itself if the profile is already complete.
-const redirectUrl = () => `${window.location.origin}/profile`;
+// ---- Session ----
+export function getSession(): MockSession | null {
+  return readJSON<MockSession>(SESSION_KEY);
+}
 
-export async function sendMagicLink(
+function setSession(user: MockUser): void {
+  localStorage.setItem(SESSION_KEY, JSON.stringify({ user }));
+  emit();
+}
+
+/** Instant "email sign-in" — no magic link round-trip in the mock. */
+export async function signInWithEmail(
   email: string,
   roleName: string,
 ): Promise<void> {
+  await wait();
   savePendingRole(roleName);
-  const { error } = await supabase.auth.signInWithOtp({
-    email: email.trim(),
-    options: { emailRedirectTo: redirectUrl() },
+  const clean = email.trim().toLowerCase();
+  const existing = readProfiles()[clean];
+  setSession({
+    id: (existing?.id as string) ?? randomId(),
+    email: clean,
   });
-  if (error) throw error;
 }
 
+/** Instant "Google" sign-in with a friendly demo account. */
 export async function signInWithGoogle(roleName: string): Promise<void> {
+  await wait();
   savePendingRole(roleName);
-  const { error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: redirectUrl(),
-      // Force Google to show the account picker instead of silent SSO.
-      queryParams: { prompt: 'select_account' },
-    },
+  const email = 'demo.student@gmail.com';
+  const existing = readProfiles()[email];
+  setSession({
+    id: (existing?.id as string) ?? randomId(),
+    email,
+    fullName: (existing?.name as string) ?? 'Demo Student',
   });
-  if (error) throw error;
 }
 
 export interface SaveProfileInput {
@@ -55,70 +115,53 @@ export interface SaveProfileInput {
 }
 
 export async function saveProfile(input: SaveProfileInput): Promise<void> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (user == null) throw new Error('Not signed in.');
+  await wait();
+  const session = getSession();
+  if (session == null) throw new Error('Not signed in.');
 
-  const email = user.email;
-  if (email == null || email.length === 0) {
-    throw new Error('Signed-in account has no email address.');
+  const email = session.user.email;
+  const profiles = readProfiles();
+  const existing = profiles[email];
+
+  let role = existing?.role as string | undefined;
+  if (role == null) {
+    const pending = takePendingRole();
+    if (pending == null) {
+      throw new Error('No role selected. Go back, pick a role, and sign in.');
+    }
+    role = pending;
   }
 
-  const payload: Record<string, unknown> = {
+  const next: Profile = {
+    ...(existing ?? {}),
+    id: session.user.id,
+    email,
+    role,
     name: input.name,
     profile_setup_complete: true,
   };
-  if (input.phone && input.phone.length > 0) payload.phone = input.phone;
-  if (input.discipline) payload.discipline = input.discipline;
-  if (input.bio && input.bio.length > 0) payload.bio = input.bio;
+  if (input.phone && input.phone.length > 0) next.phone = input.phone;
+  if (input.discipline) next.discipline = input.discipline;
+  else delete next.discipline;
+  if (input.bio && input.bio.length > 0) next.bio = input.bio;
 
-  const existing = await getCurrentProfile();
-  if (existing == null) {
-    const pendingRole = takePendingRole();
-    if (pendingRole == null) {
-      throw new Error(
-        'No role selected. Go back, pick a role, and sign in again.',
-      );
-    }
-    const { error } = await supabase.from('users').insert({
-      id: user.id,
-      role: pendingRole,
-      email,
-      ...payload,
-    });
-    if (error) throw error;
-    return;
-  }
-
-  const { error } = await supabase
-    .from('users')
-    .update(payload)
-    .eq('id', user.id);
-  if (error) throw error;
+  profiles[email] = next;
+  localStorage.setItem(PROFILE_KEY, JSON.stringify(profiles));
+  emit();
 }
 
-/** True when the user still needs to finish the profile-setup page. */
 export function needsProfileSetup(profile: Profile | null): boolean {
   if (profile == null) return true;
   return profile.profile_setup_complete !== true;
 }
 
 export async function getCurrentProfile(): Promise<Profile | null> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (user == null) return null;
-
-  const { data, error } = await supabase
-    .from('users')
-    .select()
-    .eq('id', user.id)
-    .maybeSingle();
-  if (error) throw error;
-  return data;
+  const session = getSession();
+  if (session == null) return null;
+  return readProfiles()[session.user.email] ?? null;
 }
 
 export async function signOut(): Promise<void> {
-  await supabase.auth.signOut({ scope: 'local' });
+  localStorage.removeItem(SESSION_KEY);
+  emit();
 }
