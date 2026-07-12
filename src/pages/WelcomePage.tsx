@@ -14,7 +14,7 @@ import { USER_DISCIPLINES } from '../models/disciplines';
 import { Button } from '@/components/ui/button';
 
 const FACTS = [
-  { icon: CalendarDays, text: 'January 2027' },
+  { icon: CalendarDays, text: 'March 2027' },
   { icon: Clock3, text: '9:00 AM – 5:45 PM' },
   { icon: MapPin, text: 'Emerald High School, Dublin, CA' },
 ];
@@ -99,8 +99,7 @@ export default function WelcomePage() {
             className="animate-fade-up mt-6 max-w-xl text-base leading-relaxed text-muted-foreground md:text-lg lg:max-w-2xl lg:text-xl"
             style={{ animationDelay: '160ms' }}
           >
-            20+ tracks, 30+ visiting experts, hundreds of builders — and your
-            whole day in one calm, self-directed app.
+            20+ tracks, 30+ visiting experts, hundreds of builders — all in one day.
           </p>
 
           <div

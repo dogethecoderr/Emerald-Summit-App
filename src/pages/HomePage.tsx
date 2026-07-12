@@ -2,6 +2,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
   CalendarDays,
+  ChevronLeft,
   ChevronRight,
   ClipboardCheck,
   Clock3,
@@ -102,59 +103,71 @@ function RolePicker() {
         style={{ background: 'radial-gradient(ellipse, #0C7A55 0%, transparent 65%)' }}
         aria-hidden
       />
-      <div className="relative mx-auto max-w-3xl px-6 py-12">
-        <div className="flex items-center gap-2.5">
-          <div className="h-9 w-9">
-            <SummitLogo />
-          </div>
-          <div className="leading-tight">
-            <div className="font-display text-[15px] font-semibold">
-              Emerald Summit
+      <div className="relative mx-auto max-w-[1440px] px-6 pb-12 pt-16 lg:px-14 lg:pb-16 lg:pt-20">
+        <header className="flex items-center justify-between pb-6 lg:pb-10">
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ChevronLeft className="h-4 w-4" /> Back
+          </button>
+          <div className="flex items-center gap-4">
+            <div className="h-14 w-14 lg:h-[4.5rem] lg:w-[4.5rem]">
+              <SummitLogo />
             </div>
-            <div className="text-[11px] text-muted-foreground">
-              EHS Academic Foundation
+            <div className="leading-tight">
+              <div className="font-display text-lg font-semibold lg:text-2xl">
+                Emerald Summit
+              </div>
+              <div className="text-xs text-muted-foreground lg:text-sm">
+                EHS Academic Foundation
+              </div>
             </div>
           </div>
-        </div>
+          <span className="w-14" aria-hidden />
+        </header>
 
-        <div className="mt-12">
-          <h1 className="font-display text-3xl font-semibold tracking-tight md:text-4xl">
-            Who are you at the summit?
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground md:text-[15px]">
-            Your role shapes what you see — pick the one that fits and sign in.
-          </p>
-        </div>
+        <div className="mt-14 pt-4 lg:mt-24 lg:flex lg:items-start lg:gap-16 lg:pt-8 xl:gap-24">
+          <div className="lg:sticky lg:top-12 lg:w-[min(100%,420px)] lg:shrink-0">
+            <h1 className="font-display text-3xl font-semibold tracking-tight md:text-4xl lg:text-[2.75rem] lg:leading-tight">
+              Who are you at the summit?
+            </h1>
+            <p className="mt-3 max-w-md text-sm leading-relaxed text-muted-foreground md:text-[15px] lg:text-base">
+              Your role shapes what you see — pick the one that fits and sign in.
+            </p>
+          </div>
 
-        <div className="mt-8 space-y-3">
-          {USER_ROLES.map((r, i) => (
-            <button
-              key={r.name}
-              onClick={() => navigate(`/login/${r.name}`)}
-              className="glass animate-fade-up group flex w-full items-center gap-4 rounded-2xl p-4 text-left transition-all hover:translate-x-1 hover:border-emerald-glow/40 sm:p-5"
-              style={{ animationDelay: `${i * 70}ms` }}
-            >
-              <span
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset"
-                style={{
-                  background: `${r.color}1e`,
-                  color: r.color,
-                  boxShadow: `inset 0 0 0 1px ${r.color}44`,
-                }}
+          <div className="mt-10 grid flex-1 gap-3 sm:gap-4 md:grid-cols-2 lg:mt-0 xl:gap-5 [&>*:last-child:nth-child(odd)]:md:col-span-2">
+            {USER_ROLES.map((r, i) => (
+              <button
+                key={r.name}
+                onClick={() => navigate(`/login/${r.name}`)}
+                className="glass animate-fade-up group flex w-full items-center gap-4 rounded-2xl p-4 text-left transition-all hover:translate-x-1 hover:border-emerald-glow/40 sm:p-5 lg:hover:translate-x-0 lg:hover:-translate-y-0.5"
+                style={{ animationDelay: `${i * 70}ms` }}
               >
-                <r.icon className="h-5 w-5" strokeWidth={1.9} />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block font-display text-[15px] font-semibold">
-                  {r.label}
+                <span
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset lg:h-12 lg:w-12"
+                  style={{
+                    background: `${r.color}1e`,
+                    color: r.color,
+                    boxShadow: `inset 0 0 0 1px ${r.color}44`,
+                  }}
+                >
+                  <r.icon className="h-5 w-5" strokeWidth={1.9} />
                 </span>
-                <span className="mt-0.5 block text-[13px] leading-snug text-muted-foreground">
-                  {r.description}
+                <span className="min-w-0 flex-1">
+                  <span className="block font-display text-[15px] font-semibold lg:text-base">
+                    {r.label}
+                  </span>
+                  <span className="mt-0.5 block text-[13px] leading-snug text-muted-foreground lg:text-sm">
+                    {r.description}
+                  </span>
                 </span>
-              </span>
-              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-all group-hover:translate-x-0.5 group-hover:text-emerald-mint" />
-            </button>
-          ))}
+                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-all group-hover:translate-x-0.5 group-hover:text-emerald-mint" />
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </div>
