@@ -45,7 +45,7 @@ function CampusMap({ route }: { route: string[] }) {
             className={cn(
               routeSet.has(k) ? 'fill-emerald/30' : 'fill-secondary',
             )}
-            stroke={routeSet.has(k) ? '#34D399' : 'hsl(154 20% 20%)'}
+            stroke={routeSet.has(k) ? '#0C7A55' : 'hsl(154 20% 20%)'}
             strokeWidth={routeSet.has(k) ? 1.5 : 1}
           />
           <text
@@ -74,7 +74,7 @@ function CampusMap({ route }: { route: string[] }) {
         <polyline
           points={points}
           fill="none"
-          stroke="#34D399"
+          stroke="#0C7A55"
           strokeWidth="2"
           strokeDasharray="5 4"
           strokeLinecap="round"

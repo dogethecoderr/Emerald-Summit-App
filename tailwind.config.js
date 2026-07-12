@@ -47,8 +47,8 @@ module.exports = {
           DEFAULT: '#0C7A55',
           deep: '#0A5F43',
           bright: '#22C55E',
-          mint: '#6EE7B7',
-          glow: '#34D399',
+          mint: '#0A5F43',
+          glow: '#0C7A55',
         },
       },
       borderRadius: {
