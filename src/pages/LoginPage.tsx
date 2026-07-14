@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, Mail } from 'lucide-react';
 import { toast } from 'sonner';
-import { roleByName } from '../models/roles';
+import { SIGN_IN_ROLES } from '../models/roles';
 import { signInWithEmail, signInWithGoogle } from '../services/auth';
 import GoogleIcon from '../components/GoogleIcon';
 import SummitLogo from '../components/SummitLogo';
@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 export default function LoginPage() {
   const { role: roleName } = useParams();
   const navigate = useNavigate();
-  const role = roleByName(roleName);
+  const role = SIGN_IN_ROLES.find((r) => r.name === roleName);
 
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState<string | null>(null);

@@ -35,7 +35,7 @@ export const MOCK_ANNOUNCEMENTS: Announcement[] = [
     category: 'General',
     date: 'Jun 29',
     pinned: true,
-    author: 'Bharat Paliwal & Deepa Kannan',
+    author: 'Marcus Chen & Elena Rodriguez',
     audience: 'Everyone',
   },
   {
@@ -45,7 +45,7 @@ export const MOCK_ANNOUNCEMENTS: Announcement[] = [
     category: 'General',
     date: 'Jun 29',
     pinned: true,
-    author: 'Deepa Kannan',
+    author: 'Elena Rodriguez',
     audience: 'Participants',
   },
   {
@@ -55,7 +55,7 @@ export const MOCK_ANNOUNCEMENTS: Announcement[] = [
     category: 'Urgent',
     date: 'Jun 28',
     pinned: false,
-    author: 'Bharat Paliwal',
+    author: 'Marcus Chen',
     audience: 'Ambassadors',
     attachments: [
       { title: 'Student Ambassador Application', type: 'Form' },
@@ -63,13 +63,13 @@ export const MOCK_ANNOUNCEMENTS: Announcement[] = [
   },
   {
     id: 'a4',
-    title: 'Parent Orientation Details Coming',
-    body: 'A dedicated parent orientation will be held on the morning of the summit. Details including time and location will be posted here once the date is set. All families are welcome.',
+    title: 'Mentor Orientation Details Coming',
+    body: 'A dedicated mentor orientation will be held on the morning of the summit. Details including time and location will be posted here once the date is set.',
     category: 'Logistics',
     date: 'Jun 27',
     pinned: false,
     author: 'Summit Ops Team',
-    audience: 'Parents',
+    audience: 'Mentors',
     attachments: [
       { title: 'Code of Conduct & Community Agreement', type: 'PDF', size: '420 KB' },
       { title: 'Emerald High Campus Map', type: 'PDF', size: '950 KB' },

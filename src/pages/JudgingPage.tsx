@@ -105,7 +105,7 @@ function CampusMap({ route }: { route: string[] }) {
 }
 
 export default function JudgingPage() {
-  const { ready, redirect } = useRequireRole(['expert', 'admin']);
+  const { ready, redirect } = useRequireRole(['expert']);
 
   if (redirect) return <Navigate to={redirect} replace />;
   if (!ready) {

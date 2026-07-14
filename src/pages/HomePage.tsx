@@ -4,16 +4,13 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
-  ClipboardCheck,
-  Clock3,
   Eye,
   Gavel,
-  Paintbrush,
   BookUser,
   type LucideIcon,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { USER_ROLES, roleByName } from '../models/roles';
+import { SIGN_IN_ROLES, USER_ROLES, roleByName } from '../models/roles';
 import { disciplineByName } from '../models/disciplines';
 import { MOCK_SESSIONS, TIME_SLOTS } from '../models/sessions';
 import { MOCK_ANNOUNCEMENTS } from '../models/announcements';
@@ -48,20 +45,6 @@ const QUICK_ACTIONS: Record<string, QuickAction[]> = {
       icon: CalendarDays,
     },
   ],
-  ambassador: [
-    {
-      to: '/track',
-      label: 'Edit your track page',
-      sub: 'Keep your marketing page current',
-      icon: Paintbrush,
-    },
-    {
-      to: '/hours',
-      label: 'Log volunteer hours',
-      sub: 'Certificates generate automatically',
-      icon: Clock3,
-    },
-  ],
   expert: [
     {
       to: '/judging',
@@ -70,21 +53,8 @@ const QUICK_ACTIONS: Record<string, QuickAction[]> = {
       icon: Gavel,
     },
   ],
-  admin: [
-    {
-      to: '/checkin',
-      label: 'Open check-in desk',
-      sub: 'Live arrival counts by discipline',
-      icon: ClipboardCheck,
-    },
-    {
-      to: '/announcements',
-      label: 'Broadcast announcement',
-      sub: 'Push + feed + email in one send',
-      icon: ArrowRight,
-    },
-  ],
-  parent: [
+  attendee: [],
+  mentor: [
     {
       to: '/student',
       label: "Follow your student's day",
@@ -138,12 +108,16 @@ function RolePicker() {
             </p>
           </div>
 
-          <div className="mt-10 grid flex-1 gap-3 sm:gap-4 md:grid-cols-2 lg:mt-0 xl:gap-5 [&>*:last-child:nth-child(odd)]:md:col-span-2">
-            {USER_ROLES.map((r, i) => (
+          <div className="mt-10 grid flex-1 gap-3 sm:gap-4 md:grid-cols-2 lg:mt-0 xl:gap-5">
+            {SIGN_IN_ROLES.map((r, i) => (
               <button
                 key={r.name}
                 onClick={() => navigate(`/login/${r.name}`)}
-                className="glass animate-fade-up group flex w-full items-center gap-4 rounded-2xl p-4 text-left transition-all hover:translate-x-1 hover:border-emerald-glow/40 sm:p-5 lg:hover:translate-x-0 lg:hover:-translate-y-0.5"
+                className={`glass animate-fade-up group flex w-full items-center gap-4 rounded-2xl p-4 text-left transition-all hover:translate-x-1 hover:border-emerald-glow/40 sm:p-5 lg:hover:translate-x-0 lg:hover:-translate-y-0.5 ${
+                  r.name === 'participant' || r.name === 'attendee'
+                    ? 'md:col-span-2'
+                    : ''
+                }`}
                 style={{ animationDelay: `${i * 70}ms` }}
               >
                 <span
@@ -213,7 +187,7 @@ export default function HomePage() {
     (s) => mySchedule.includes(s.id) || spectating.includes(s.id),
   ).sort((a, b) => TIME_SLOTS.indexOf(a.time) - TIME_SLOTS.indexOf(b.time))[0];
 
-  const actions = QUICK_ACTIONS[roleName] ?? QUICK_ACTIONS.participant;
+  const actions = QUICK_ACTIONS[roleName] ?? [];
 
   const stats = [
     { label: 'My sessions', value: String(myCount) },
@@ -254,24 +228,26 @@ export default function HomePage() {
       </div>
 
       {/* role quick actions */}
-      <div className="mb-6 grid gap-3 sm:grid-cols-2">
-        {actions.map(({ to, label, sub, icon: Icon }) => (
-          <button
-            key={to + label}
-            onClick={() => navigate(to)}
-            className="group flex items-center gap-4 rounded-2xl border border-emerald-glow/25 bg-gradient-to-br from-emerald/20 to-emerald-deep/10 p-4 text-left transition-all hover:border-emerald-glow/50 hover:from-emerald/25"
-          >
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald/25 text-emerald-mint">
-              <Icon className="h-5 w-5" />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-[14px] font-semibold">{label}</span>
-              <span className="block text-xs text-muted-foreground">{sub}</span>
-            </span>
-            <ArrowRight className="h-4 w-4 shrink-0 text-emerald-mint transition-transform group-hover:translate-x-0.5" />
-          </button>
-        ))}
-      </div>
+      {actions.length > 0 && (
+        <div className="mb-6 grid gap-3 sm:grid-cols-2">
+          {actions.map(({ to, label, sub, icon: Icon }) => (
+            <button
+              key={to + label}
+              onClick={() => navigate(to)}
+              className="group flex items-center gap-4 rounded-2xl border border-emerald-glow/25 bg-gradient-to-br from-emerald/20 to-emerald-deep/10 p-4 text-left transition-all hover:border-emerald-glow/50 hover:from-emerald/25"
+            >
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald/25 text-emerald-mint">
+                <Icon className="h-5 w-5" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[14px] font-semibold">{label}</span>
+                <span className="block text-xs text-muted-foreground">{sub}</span>
+              </span>
+              <ArrowRight className="h-4 w-4 shrink-0 text-emerald-mint transition-transform group-hover:translate-x-0.5" />
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-[3fr_2fr]">
         <FeaturedSessionsCard sessions={MOCK_SESSIONS.slice(0, 6)} />

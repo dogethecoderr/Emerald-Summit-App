@@ -4,6 +4,7 @@ import {
   HeartHandshake,
   Award,
   ShieldCheck,
+  Eye,
   Users,
   type LucideIcon,
 } from 'lucide-react';
@@ -27,19 +28,19 @@ export const USER_ROLES: RoleInfo[] = [
     color: '#0EA5E9',
   },
   {
+    name: 'attendee',
+    label: 'Attendee',
+    description: 'Explore the summit, browse event updates, and see what is happening.',
+    icon: Eye,
+    color: '#2563EB',
+  },
+  {
     name: 'ambassador',
     label: 'Ambassador',
     description:
       'Edit activity pages, post announcements, and log volunteer hours.',
     icon: HeartHandshake, // volunteer_activism_outlined
     color: '#F59E0B',
-  },
-  {
-    name: 'expert',
-    label: 'Expert',
-    description: 'View your judging assignments and navigate between rooms.',
-    icon: Award, // workspace_premium_outlined
-    color: '#7C3AED',
   },
   {
     name: 'admin',
@@ -50,13 +51,29 @@ export const USER_ROLES: RoleInfo[] = [
     color: '#0C7A55',
   },
   {
-    name: 'parent',
-    label: 'Parent',
+    name: 'mentor',
+    label: 'Mentor',
     description: "Follow your student's day and receive activity updates.",
     icon: Users, // family_restroom_outlined
     color: '#E11D48',
   },
+  {
+    name: 'expert',
+    label: 'Expert',
+    description: 'View your judging assignments and navigate between rooms.',
+    icon: Award, // workspace_premium_outlined
+    color: '#7C3AED',
+  },
 ];
+
+/**
+ * Roles that can sign in to the app. Ambassadors and admins are coordinated
+ * offline and don't use the app; they stay in USER_ROLES so directory
+ * listings still label those people correctly.
+ */
+export const SIGN_IN_ROLES: RoleInfo[] = USER_ROLES.filter(
+  (r) => r.name !== 'ambassador' && r.name !== 'admin',
+);
 
 export function roleByName(name: string | undefined): RoleInfo | undefined {
   if (!name) return undefined;

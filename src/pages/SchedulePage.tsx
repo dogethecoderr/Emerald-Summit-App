@@ -16,7 +16,7 @@ import AppShell from '../components/AppShell';
 import PageHeader from '../components/PageHeader';
 import CapacityBar from '../components/CapacityBar';
 import TrackPill from '../components/TrackPill';
-import { useRequireProfile } from '../hooks/useRequireProfile';
+import { useRequireRole } from '../hooks/useRequireProfile';
 import { useSchedule } from '../context/ScheduleContext';
 import { USER_DISCIPLINES } from '../models/disciplines';
 import {
@@ -36,7 +36,7 @@ function filterLabel(name: string): string {
 }
 
 export default function SchedulePage() {
-  const { ready, redirect } = useRequireProfile();
+  const { ready, redirect } = useRequireRole(['participant']);
   const { mySchedule, setMySchedule, spectating, setSpectating } =
     useSchedule();
   const [disciplineFilter, setDisciplineFilter] = useState('All');

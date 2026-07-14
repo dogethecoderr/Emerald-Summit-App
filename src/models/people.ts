@@ -19,16 +19,18 @@ export interface Person {
   bio: string;
   emailVisible: Visibility;
   phoneVisible: Visibility;
+  /** When set, controls whether the bio line appears on directory cards. */
+  bioVisible?: Visibility;
   status: PersonStatus;
 }
 
 export const MOCK_PEOPLE: Person[] = [
   {
     id: 'p1',
-    name: 'Bharat Paliwal',
+    name: 'Marcus Chen',
     role: 'admin',
     org: 'Emerald High School',
-    email: 'b.paliwal@emeraldhigh.edu',
+    email: 'm.chen@emeraldhigh.edu',
     phone: '(925) 555-0101',
     initials: 'BP',
     bio: 'Summit co-director and faculty advisor overseeing all six discipline tracks.',
@@ -38,13 +40,13 @@ export const MOCK_PEOPLE: Person[] = [
   },
   {
     id: 'p2',
-    name: 'Deepa Kannan',
+    name: 'Elena Rodriguez',
     role: 'admin',
     org: 'Emerald High School',
-    email: 'd.kannan@emeraldhigh.edu',
+    email: 'e.rodriguez@emeraldhigh.edu',
     phone: '(925) 555-0102',
     initials: 'DK',
-    bio: 'Summit co-director leading participant experience, logistics, and parent engagement.',
+    bio: 'Summit co-director leading participant experience, logistics, and mentor engagement.',
     emailVisible: 'public',
     phoneVisible: 'public',
     status: 'checkedIn',
@@ -143,12 +145,12 @@ export const MOCK_PEOPLE: Person[] = [
   {
     id: 'p10',
     name: 'Ravi & Sunita Sharma',
-    role: 'parent',
-    org: 'Parent Council',
+    role: 'mentor',
+    org: 'Mentor Council',
     email: 'sharmas@email.com',
     phone: '(925) 555-0110',
     initials: 'RS',
-    bio: 'Parent council co-chairs coordinating volunteer support and family communications.',
+    bio: 'Mentor council co-chairs coordinating student support and summit communications.',
     emailVisible: 'ambassadors',
     phoneVisible: 'private',
     status: 'none',
@@ -156,8 +158,8 @@ export const MOCK_PEOPLE: Person[] = [
   {
     id: 'p11',
     name: 'Teresa Mendes',
-    role: 'parent',
-    org: 'Parent Council',
+    role: 'mentor',
+    org: 'Mentor Council',
     email: 't.mendes@email.com',
     phone: '(925) 555-0111',
     initials: 'TM',

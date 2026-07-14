@@ -15,7 +15,7 @@ import { MOCK_SESSIONS, TIME_SLOTS } from '../models/sessions';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
-// PLACEHOLDER: parent↔student linking isn't backed by real data yet — this
+// PLACEHOLDER: mentor↔student linking isn't backed by real data yet — this
 // mocks a confirmed link to Priya Sharma (p7 in the directory) following
 // a competitor schedule of four sessions.
 const LINKED_STUDENT = {
@@ -47,7 +47,7 @@ const UPDATES = [
 ];
 
 export default function StudentPage() {
-  const { ready, redirect } = useRequireRole(['parent', 'admin']);
+  const { ready, redirect } = useRequireRole(['mentor']);
 
   if (redirect) return <Navigate to={redirect} replace />;
   if (!ready) {
@@ -68,7 +68,7 @@ export default function StudentPage() {
   return (
     <AppShell>
       <PageHeader
-        label="Parent View · Spectator Lens"
+        label="Mentor View · Spectator Lens"
         title={`${LINKED_STUDENT.name.split(' ')[0]}'s Day`}
         sub="Follow your student's schedule and progress. You'll get notifications tied to their activities — registration stays in their hands."
       />

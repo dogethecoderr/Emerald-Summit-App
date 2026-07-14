@@ -41,7 +41,7 @@ export const MOCK_SESSIONS: Session[] = [
   {
     id: 's1',
     title: 'Opening Keynote: Innovate, Imagine, Impact',
-    speaker: 'Bharat Paliwal & Deepa Kannan',
+    speaker: 'Marcus Chen & Elena Rodriguez',
     time: '9:00 AM',
     location: 'Main Hall A',
     room: 'A',
@@ -232,7 +232,7 @@ export const MOCK_SESSIONS: Session[] = [
   {
     id: 's13',
     title: 'Closing Ceremony & Discipline Awards',
-    speaker: 'Bharat Paliwal & Deepa Kannan',
+    speaker: 'Marcus Chen & Elena Rodriguez',
     time: '5:00 PM',
     location: 'Main Hall A',
     room: 'A',
