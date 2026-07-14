@@ -5,7 +5,7 @@ import LoginPage from './pages/LoginPage';
 import ProfileSetupPage from './pages/ProfileSetupPage';
 import SchedulePage from './pages/SchedulePage';
 import AnnouncementsPage from './pages/AnnouncementsPage';
-import ProfilesPage from './pages/ProfilesPage';
+import SettingsPage from './pages/SettingsPage';
 import DirectoryPage from './pages/DirectoryPage';
 import ResourcesPage from './pages/ResourcesPage';
 import JudgingPage from './pages/JudgingPage';
@@ -20,7 +20,9 @@ export default function App() {
       <Route path="/profile" element={<ProfileSetupPage />} />
       <Route path="/schedule" element={<SchedulePage />} />
       <Route path="/announcements" element={<AnnouncementsPage />} />
-      <Route path="/profiles" element={<ProfilesPage />} />
+      <Route path="/profiles" element={<Navigate to="/settings" replace />} />
+      <Route path="/settings" element={<SettingsPage />} />
+      <Route path="/settings/:section" element={<SettingsPage />} />
       <Route path="/directory" element={<DirectoryPage />} />
       <Route path="/resources" element={<ResourcesPage />} />
       <Route path="/judging" element={<JudgingPage />} />

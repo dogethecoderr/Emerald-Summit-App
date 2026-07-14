@@ -4,7 +4,7 @@ import {
   LayoutDashboard,
   CalendarDays,
   Users,
-  UserRound,
+  Settings,
   Megaphone,
   LogOut,
   FolderOpen,
@@ -39,9 +39,9 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/judging', label: 'Judging', icon: Gavel, roles: ['expert'] },
   { to: '/student', label: 'My Student', icon: BookUser, roles: ['mentor'] },
   { to: '/announcements', label: 'Announcements', icon: Megaphone },
-  { to: '/profiles', label: 'Profiles', icon: UserRound },
   { to: '/directory', label: 'Directory', icon: Users },
   { to: '/resources', label: 'Resources', icon: FolderOpen },
+  { to: '/settings', label: 'Settings', icon: Settings },
 ];
 
 export function navItemsForRole(roleName: string): NavItem[] {
@@ -71,6 +71,25 @@ function NavBadge({ to }: { to: string }) {
   return null;
 }
 
+function SidebarLink({ to, label, icon: Icon }: NavItem) {
+  return (
+    <NavLink
+      to={to}
+      className={({ isActive }) =>
+        cn(
+          'group flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground',
+          isActive &&
+            'bg-emerald/15 text-emerald-mint ring-1 ring-inset ring-emerald-glow/30 hover:bg-emerald/20 hover:text-emerald-mint',
+        )
+      }
+    >
+      <Icon className="h-4 w-4 shrink-0" />
+      <span>{label}</span>
+      <NavBadge to={to} />
+    </NavLink>
+  );
+}
+
 export default function AppShell({ children }: { children: ReactNode }) {
   const { profile } = useAuth();
   const navigate = useNavigate();
@@ -79,6 +98,12 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const roleName = (profile?.role as string | undefined) ?? 'participant';
   const role = roleByName(roleName) ?? USER_ROLES[0];
   const items = navItemsForRole(roleName);
+  const settingsItem = items.find((n) => n.to === '/settings');
+  const otherItems = items.filter((n) => n.to !== '/settings');
+  const mobileItems = [
+    ...otherItems.slice(0, 4),
+    ...(settingsItem ? [settingsItem] : []),
+  ];
   const initials = name
     .split(/\s+/)
     .map((w) => w[0])
@@ -110,22 +135,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
         </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto px-3">
-          {items.map(({ to, label, icon: Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              className={({ isActive }) =>
-                cn(
-                  'group flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground',
-                  isActive &&
-                    'bg-emerald/15 text-emerald-mint ring-1 ring-inset ring-emerald-glow/30 hover:bg-emerald/20 hover:text-emerald-mint',
-                )
-              }
-            >
-              <Icon className="h-4 w-4 shrink-0" />
-              <span>{label}</span>
-              <NavBadge to={to} />
-            </NavLink>
+          {items.map((item) => (
+            <SidebarLink key={item.to} {...item} />
           ))}
         </nav>
 
@@ -174,9 +185,9 @@ export default function AppShell({ children }: { children: ReactNode }) {
         </button>
       </div>
 
-      {/* Mobile bottom nav */}
+      {/* Mobile bottom nav — Settings last */}
       <nav className="fixed inset-x-0 bottom-0 z-30 flex justify-around border-t border-border/70 bg-background/90 px-1 py-1.5 backdrop-blur-xl lg:hidden">
-        {items.slice(0, 5).map(({ to, label, icon: Icon }) => (
+        {mobileItems.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
