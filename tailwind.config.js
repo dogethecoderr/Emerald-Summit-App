@@ -7,6 +7,9 @@ module.exports = {
       fontFamily: {
         sans: ['"Instrument Sans"', 'system-ui', 'sans-serif'],
         display: ['"Fraunces"', 'Georgia', 'serif'],
+        // Landing-page display + label faces (scoped, not global headings)
+        hero: ['"Fraunces"', 'Georgia', 'serif'],
+        mono: ['"Spline Sans Mono"', 'ui-monospace', 'monospace'],
       },
       colors: {
         border: 'hsl(var(--border))',
