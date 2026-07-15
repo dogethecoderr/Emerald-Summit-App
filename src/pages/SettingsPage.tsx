@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import {
   Bell,
@@ -170,6 +170,43 @@ function ProfileSettings({
     setPhoneVisible(next.phoneVisible);
     setBioVisible(next.bioVisible);
   }, [profile]);
+
+  // Unsaved-changes tracking: compare form state against the saved profile.
+  const isDirty =
+    name !== ((profile.name as string) ?? '') ||
+    org !== settings.org ||
+    phone !== ((profile.phone as string | undefined) ?? '') ||
+    bio !== ((profile.bio as string | undefined) ?? '') ||
+    directoryVisible !== settings.directoryVisible ||
+    emailVisible !== settings.emailVisible ||
+    phoneVisible !== settings.phoneVisible ||
+    bioVisible !== settings.bioVisible;
+
+  const isDirtyRef = useRef(isDirty);
+  isDirtyRef.current = isDirty;
+
+  // Alert when leaving the page (unmount) with unsaved edits.
+  useEffect(() => {
+    return () => {
+      if (isDirtyRef.current) {
+        toast.error('You have unsaved profile changes', {
+          description: 'Your edits were not saved.',
+          classNames: {
+            description: '!text-red-200',
+          },
+        });
+      }
+    };
+  }, []);
+
+  // Also warn on tab close / refresh with unsaved edits.
+  useEffect(() => {
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirtyRef.current) e.preventDefault();
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, []);
 
   const previewPerson = useMemo(
     () =>

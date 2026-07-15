@@ -10,6 +10,7 @@ import App from './App';
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter
+      basename="/Emerald-Summit-App"
       future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
     >
       <AuthProvider>
