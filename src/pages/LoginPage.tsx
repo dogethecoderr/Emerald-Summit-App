@@ -1,22 +1,19 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, Mail } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { SIGN_IN_ROLES } from '../models/roles';
-import { signInWithEmail, signInWithGoogle } from '../services/auth';
+import { signInWithGoogle, signInWithLinkedIn } from '../services/auth';
 import GoogleIcon from '../components/GoogleIcon';
+import LinkedInIcon from '../components/LinkedInIcon';
 import SummitLogo from '../components/SummitLogo';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 
 export default function LoginPage() {
   const { role: roleName } = useParams();
   const navigate = useNavigate();
   const role = SIGN_IN_ROLES.find((r) => r.name === roleName);
 
-  const [email, setEmail] = useState('');
-  const [emailError, setEmailError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   if (!role) {
@@ -36,20 +33,6 @@ export default function LoginPage() {
     );
   }
 
-  const validateEmail = (): boolean => {
-    const value = email.trim();
-    if (value.length === 0) {
-      setEmailError('Enter your email address');
-      return false;
-    }
-    if (!value.includes('@')) {
-      setEmailError('Enter a valid email address');
-      return false;
-    }
-    setEmailError(null);
-    return true;
-  };
-
   const handleGoogle = async () => {
     setIsLoading(true);
     try {
@@ -61,14 +44,13 @@ export default function LoginPage() {
     }
   };
 
-  const handleEmailSignIn = async () => {
-    if (!validateEmail()) return;
+  const handleLinkedIn = async () => {
     setIsLoading(true);
     try {
-      await signInWithEmail(email.trim(), role.name);
+      await signInWithLinkedIn(role.name);
       navigate('/profile');
     } catch (error) {
-      toast.error(`${error}`);
+      toast.error(`LinkedIn sign-in failed: ${error}`);
       setIsLoading(false);
     }
   };
@@ -149,45 +131,14 @@ export default function LoginPage() {
                   <span className="ml-2">Continue with Google</span>
                 </Button>
 
-                <div className="my-6 flex items-center gap-3">
-                  <span className="h-px flex-1 bg-border" />
-                  <span className="text-xs font-medium text-muted-foreground">or</span>
-                  <span className="h-px flex-1 bg-border" />
-                </div>
-
-                <Label htmlFor="email" className="mb-2 text-[13px]">
-                  Email address
-                </Label>
-                <div className="relative">
-                  <Mail className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    inputMode="email"
-                    autoComplete="email"
-                    placeholder="you@school.edu"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleEmailSignIn();
-                    }}
-                    className="h-12 rounded-xl bg-secondary/40 pl-10 text-[15px]"
-                  />
-                </div>
-                {emailError && (
-                  <p className="mt-2 text-xs font-medium text-red-400">{emailError}</p>
-                )}
-
                 <Button
-                  className="glow-emerald mt-5 h-12 w-full rounded-xl bg-primary text-[15px] font-semibold hover:bg-emerald"
-                  onClick={handleEmailSignIn}
+                  variant="outline"
+                  className="mt-3 h-12 w-full rounded-xl border-border bg-secondary/40 text-[15px] font-semibold hover:bg-accent"
+                  onClick={handleLinkedIn}
                   disabled={isLoading}
                 >
-                  {isLoading ? (
-                    <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-                  ) : (
-                    'Continue'
-                  )}
+                  <LinkedInIcon size={20} />
+                  <span className="ml-2">Continue with LinkedIn</span>
                 </Button>
 
                 <p className="mt-5 text-center text-xs leading-relaxed text-muted-foreground lg:text-left">

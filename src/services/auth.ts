@@ -126,6 +126,19 @@ export async function signInWithGoogle(roleName: string): Promise<void> {
   });
 }
 
+/** Instant "LinkedIn" sign-in with a friendly demo account. */
+export async function signInWithLinkedIn(roleName: string): Promise<void> {
+  await wait();
+  savePendingRole(roleName);
+  const email = 'demo.student@linkedin.com';
+  const existing = readProfiles()[email];
+  setSession({
+    id: (existing?.id as string) ?? randomId(),
+    email,
+    fullName: (existing?.name as string) ?? 'Demo Student',
+  });
+}
+
 export interface SaveProfileInput {
   name: string;
   phone?: string;
