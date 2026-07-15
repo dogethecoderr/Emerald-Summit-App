@@ -2,7 +2,7 @@
 
 A single companion mobile app for the Tri-Valley's largest student-run STEAM summit — turning a day of 20+ tracks, 30+ experts, and hundreds of participants into one calm, self-directed experience.
 
-**Live site:** [https://dogethecoderr.github.io/Emerald-Summit-App/](https://dogethecoderr.github.io/Emerald-Summit-App/)
+**Temporary deployment for review:** [https://dogethecoderr.github.io/Emerald-Summit-App/](https://dogethecoderr.github.io/Emerald-Summit-App/)
 
 | | |
 |---|---|
