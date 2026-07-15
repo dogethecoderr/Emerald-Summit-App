@@ -10,18 +10,17 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { SIGN_IN_ROLES, USER_ROLES, roleByName } from '../models/roles';
-import { disciplineByName } from '../models/disciplines';
+import { SIGN_IN_ROLES } from '../models/roles';
 import { MOCK_SESSIONS, TIME_SLOTS } from '../models/sessions';
 import { MOCK_ANNOUNCEMENTS } from '../models/announcements';
 import type { PersonStatus } from '../models/personStatus';
-import { needsProfileSetup } from '../services/auth';
+import { needsProfileSetup, profileToPerson } from '../services/auth';
 import { useSchedule } from '../context/ScheduleContext';
 import SummitLogo from '../components/SummitLogo';
 import AppShell from '../components/AppShell';
 import PageHeader from '../components/PageHeader';
 import FeaturedSessionsCard from '../components/FeaturedSessionsCard';
-import ProfileMiniCard from '../components/ProfileMiniCard';
+import PersonCard from '../components/PersonCard';
 import AnnouncementsPanel from '../components/AnnouncementsPanel';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -176,11 +175,6 @@ export default function HomePage() {
   const name = (profile?.name as string | undefined) ?? 'User';
   const firstName = name.split(/\s+/)[0];
   const roleName = (profile?.role as string | undefined) ?? 'participant';
-  const email = (profile?.email as string | undefined) ?? '';
-  const roleInfo = roleByName(roleName) ?? USER_ROLES[0];
-  const disciplineLabel = disciplineByName(
-    profile?.discipline as string | undefined,
-  )?.label;
 
   const myCount = mySchedule.length;
   const nextSession = MOCK_SESSIONS.filter(
@@ -188,6 +182,9 @@ export default function HomePage() {
   ).sort((a, b) => TIME_SLOTS.indexOf(a.time) - TIME_SLOTS.indexOf(b.time))[0];
 
   const actions = QUICK_ACTIONS[roleName] ?? [];
+  const selfPerson = profile
+    ? { ...profileToPerson(profile), status: MOCK_STATUS }
+    : null;
 
   const stats = [
     { label: 'My sessions', value: String(myCount) },
@@ -252,12 +249,22 @@ export default function HomePage() {
       <div className="grid gap-6 lg:grid-cols-[3fr_2fr]">
         <FeaturedSessionsCard sessions={MOCK_SESSIONS.slice(0, 6)} />
         <div className="space-y-6">
-          <ProfileMiniCard
-            name={name}
-            subtitle={disciplineLabel ?? email}
-            role={roleInfo}
-            status={MOCK_STATUS}
-          />
+          {selfPerson && (
+            <PersonCard
+              person={selfPerson}
+              viewerRoleName={roleName}
+              revealPrivate
+              headerAction={
+                <button
+                  type="button"
+                  onClick={() => navigate('/settings/profile')}
+                  className="rounded-full border border-border/80 bg-secondary/50 px-2.5 py-1 text-[11px] font-semibold text-foreground transition-colors hover:border-emerald-glow/50 hover:bg-accent"
+                >
+                  Edit profile
+                </button>
+              }
+            />
+          )}
           <AnnouncementsPanel
             announcements={MOCK_ANNOUNCEMENTS}
             variant="compact"
