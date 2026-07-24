@@ -7,11 +7,9 @@ import {
   Minus,
   Eye,
   CalendarDays,
-  Download,
   Clock,
   MapPin,
 } from 'lucide-react';
-import { toast } from 'sonner';
 import AppShell from '../components/AppShell';
 import PageHeader from '../components/PageHeader';
 import CapacityBar from '../components/CapacityBar';
@@ -346,19 +344,6 @@ export default function SchedulePage() {
                 );
               })}
             </div>
-          )}
-
-          {added.length > 0 && (
-            <button
-              onClick={() =>
-                toast.success('Calendar export coming soon', {
-                  description: 'Your schedule will sync as an .ics file.',
-                })
-              }
-              className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-border py-2 text-xs font-semibold text-muted-foreground transition-colors hover:border-emerald-glow/50 hover:text-emerald-mint"
-            >
-              <Download className="h-3.5 w-3.5" /> Export to calendar
-            </button>
           )}
         </aside>
       </div>
