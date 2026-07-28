@@ -31,19 +31,23 @@ Today that lives across Instagram, email, paper, sheets, forms, and word of mout
 
 Users sign in and select a role on launch. The role is stored on their record and enforced with row-level security.
 
-| Capability | Participant | Ambassador | Expert | Admin |
-|---|:---:|:---:|:---:|:---:|
-| Build schedule & register | ● | ● | — | ● |
-| Receive next-up notifications | ● | ● | ● | ● |
-| Publish a contact profile | ● | ● | ● | ● |
-| Edit activity marketing page | — | ● | — | ● |
-| Log volunteer hours | ● | ● | — | ● |
-| Post announcements* | — | ● | — | ● |
-| Check-in & people management | — | — | — | ● |
+| Capability | Participant | Attendee | Volunteer | Expert | Admin |
+|---|:---:|:---:|:---:|:---:|:---:|
+| Build schedule & register | ● | — | — | — | ● |
+| Explore / spectate sessions | ● | ● | ● | ● | ● |
+| Receive next-up notifications | ● | ● | ● | ● | ● |
+| Publish a contact profile | ● | ● | ● | ● | ● |
+| Track roster & check-ins | — | — | ● | — | ● |
+| Edit activity marketing page | — | — | — | — | ● |
+| Log volunteer hours | ● | — | ● | — | ● |
+| Post announcements* | — | — | — | — | ● |
+| Check-in & people management | — | — | ● | — | ● |
 
 \* Ambassadors can post announcements to select groups (e.g. all ambassadors).
 
-**Parent role** — A parent links to their student (confirmed by the student or an admin) and follows that student's day through a spectator lens. They receive notifications tied to their student's activities and general headlines, but cannot schedule or register on the student's behalf.
+**Volunteer role** — Volunteers manage an assigned track roster, check participants in, and can follow a linked student's day through a spectator lens.
+
+**Attendee role** — Attendees explore the summit, browse event updates, and spectate sessions without building a competitor schedule.
 
 ---
 
@@ -53,7 +57,7 @@ Users sign in and select a role on launch. The role is stored on their record an
 A browsable catalog of all six disciplines and their tracks. Participants tap into any session to read its marketing page, then add it to a personal day plan. The builder enforces real constraints — no overlapping time blocks, warnings when a track is full, and walking time between back-to-back rooms. Session capacity limits apply.
 
 ### Announcements *(Admin → everyone)*
-Admins compose an announcement once; it lands as a push notification, an in-app feed item, and an email to every registered user. Announcements can be targeted (all attendees, a single discipline, parents, ambassadors only) and pinned to the top of the feed.
+Admins compose an announcement once; it lands as a push notification, an in-app feed item, and an email to every registered user. Announcements can be targeted (all attendees, a single discipline, volunteers, ambassadors only) and pinned to the top of the feed.
 
 ### Profiles & contact cards *(Ambassador · Staff)*
 Each user has a profile. Ambassadors and staff can opt to publish a phone number or email so teammates can reach them fast during the event. Visibility is per-field and per-audience — public, ambassadors-only, or private.

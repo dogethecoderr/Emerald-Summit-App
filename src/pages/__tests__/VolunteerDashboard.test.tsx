@@ -2,7 +2,7 @@ import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import MentorDashboard from '../MentorDashboard';
+import VolunteerDashboard from '../VolunteerDashboard';
 import * as useRequireProfileModule from '../../hooks/useRequireProfile';
 
 // Mock schedule context to avoid missing context providers
@@ -13,7 +13,19 @@ vi.mock('../../context/ScheduleContext', () => ({
   }),
 }));
 
-describe('MentorDashboard Component Suite', () => {
+vi.mock('../../context/AuthContext', () => ({
+  useAuth: () => ({
+    session: { user: { email: 'volunteer@example.com' } },
+    profile: {
+      name: 'Demo Volunteer',
+      role: 'volunteer',
+      email: 'volunteer@example.com',
+    },
+    loadingProfile: false,
+  }),
+}));
+
+describe('VolunteerDashboard Component Suite', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });
@@ -30,18 +42,18 @@ describe('MentorDashboard Component Suite', () => {
       vi.spyOn(useRequireProfileModule, 'useRequireRole').mockReturnValue({
         ready: true,
         redirect: null,
-        roleName: 'mentor',
+        roleName: 'volunteer',
       });
     });
 
-    test('renders Mentor Dashboard with assigned track, participant roster, and check-in tools', () => {
-      renderWithRouter(<MentorDashboard assignedTrack="novasphere" />);
+    test('renders Volunteer Dashboard with assigned track, participant roster, and check-in tools', () => {
+      renderWithRouter(<VolunteerDashboard assignedTrack="novasphere" />);
 
       // Verify Header and Assigned Track
-      expect(screen.getByText('Mentor Dashboard')).toBeInTheDocument();
-      expect(screen.getByText('Mentor Hub & Track Management')).toBeInTheDocument();
+      expect(screen.getByText('Volunteer Dashboard')).toBeInTheDocument();
+      expect(screen.getByText('Volunteer Hub & Track Management')).toBeInTheDocument();
       expect(screen.getByText('Assigned Track')).toBeInTheDocument();
-      expect(screen.getByText('Novasphere')).toBeInTheDocument();
+      expect(screen.getByText('NovaSphere')).toBeInTheDocument();
 
       // Verify Participant Roster header
       expect(screen.getByText('Participant Roster')).toBeInTheDocument();
@@ -52,7 +64,7 @@ describe('MentorDashboard Component Suite', () => {
 
     test('toggles check-in status when check-in button is clicked', async () => {
       const user = userEvent.setup();
-      renderWithRouter(<MentorDashboard assignedTrack="novasphere" />);
+      renderWithRouter(<VolunteerDashboard assignedTrack="novasphere" />);
 
       // Find initial check in / undo check-in buttons
       const checkInButtons = screen.getAllByRole('button', { name: /(Check In|Undo Check-in)/i });
@@ -74,7 +86,7 @@ describe('MentorDashboard Component Suite', () => {
 
     test('filters participant list when status tab is selected', async () => {
       const user = userEvent.setup();
-      renderWithRouter(<MentorDashboard assignedTrack="novasphere" />);
+      renderWithRouter(<VolunteerDashboard assignedTrack="novasphere" />);
 
       // Click "Checked In" filter tab
       const checkedInTab = screen.getByRole('button', { name: /^Checked In \(/i });
@@ -93,13 +105,13 @@ describe('MentorDashboard Component Suite', () => {
       vi.spyOn(useRequireProfileModule, 'useRequireRole').mockReturnValue({
         ready: true,
         redirect: null,
-        roleName: 'mentor',
+        roleName: 'volunteer',
       });
     });
 
     test('handles empty participant roster gracefully with empty state banner', () => {
       renderWithRouter(
-        <MentorDashboard assignedTrack="novasphere" participants={[]} />,
+        <VolunteerDashboard assignedTrack="novasphere" participants={[]} />,
       );
 
       expect(
@@ -108,21 +120,21 @@ describe('MentorDashboard Component Suite', () => {
     });
 
     test('handles unassigned track cleanly with unassigned fallback message', () => {
-      renderWithRouter(<MentorDashboard assignedTrack={null} />);
+      renderWithRouter(<VolunteerDashboard assignedTrack={null} />);
 
       expect(screen.getByText('No assigned track found')).toBeInTheDocument();
       expect(screen.getByText('No assigned track')).toBeInTheDocument();
     });
 
     test('handles unknown track string gracefully without throwing', () => {
-      renderWithRouter(<MentorDashboard assignedTrack="unknown_track_123" />);
+      renderWithRouter(<VolunteerDashboard assignedTrack="unknown_track_123" />);
 
       expect(screen.getByText('No assigned track found')).toBeInTheDocument();
     });
 
     test('handles null participants prop cleanly as empty roster', () => {
       renderWithRouter(
-        <MentorDashboard assignedTrack="novasphere" participants={null} />,
+        <VolunteerDashboard assignedTrack="novasphere" participants={null} />,
       );
 
       expect(
@@ -132,9 +144,9 @@ describe('MentorDashboard Component Suite', () => {
 
     test('filters participant list when typing into search input', async () => {
       const user = userEvent.setup();
-      renderWithRouter(<MentorDashboard assignedTrack="novasphere" />);
+      renderWithRouter(<VolunteerDashboard assignedTrack="novasphere" />);
 
-      const searchInput = screen.getByPlaceholderText('Search mentees...');
+      const searchInput = screen.getByPlaceholderText('Search participants...');
       await user.type(searchInput, 'Priya');
 
       expect(screen.getByText('Priya Sharma')).toBeInTheDocument();
@@ -153,17 +165,17 @@ describe('MentorDashboard Component Suite', () => {
   // Tier 3: Cross-Feature & Security
   // ---------------------------------------------------------------------------
   describe('Tier 3: Cross-Feature & Role Gating Security', () => {
-    test('enforces role gating and redirects unauthorized non-mentor users', () => {
+    test('enforces role gating and redirects unauthorized non-volunteer users', () => {
       vi.spyOn(useRequireProfileModule, 'useRequireRole').mockReturnValue({
         ready: false,
         redirect: '/home',
         roleName: 'participant',
       });
 
-      renderWithRouter(<MentorDashboard assignedTrack="novasphere" />);
+      renderWithRouter(<VolunteerDashboard assignedTrack="novasphere" />);
 
       // Content should not be rendered when redirected
-      expect(screen.queryByText('Mentor Dashboard')).not.toBeInTheDocument();
+      expect(screen.queryByText('Volunteer Dashboard')).not.toBeInTheDocument();
       expect(screen.queryByText('Participant Roster')).not.toBeInTheDocument();
     });
   });
@@ -176,20 +188,20 @@ describe('MentorDashboard Component Suite', () => {
       vi.spyOn(useRequireProfileModule, 'useRequireRole').mockReturnValue({
         ready: true,
         redirect: null,
-        roleName: 'mentor',
+        roleName: 'volunteer',
       });
     });
 
     test('uses AppShell, PageHeader eyebrow, font-display heading, and glass card components', () => {
       const { container } = renderWithRouter(
-        <MentorDashboard assignedTrack="novasphere" />,
+        <VolunteerDashboard assignedTrack="novasphere" />,
       );
 
       // PageHeader Eyebrow
-      expect(screen.getByText('Mentor Dashboard')).toBeInTheDocument();
+      expect(screen.getByText('Volunteer Dashboard')).toBeInTheDocument();
 
       // Heading display font
-      const heading = screen.getByText('Mentor Hub & Track Management');
+      const heading = screen.getByText('Volunteer Hub & Track Management');
       expect(heading).toHaveClass('font-display');
 
       // Glass cards present in DOM
@@ -198,4 +210,3 @@ describe('MentorDashboard Component Suite', () => {
     });
   });
 });
-

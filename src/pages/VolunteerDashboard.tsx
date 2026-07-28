@@ -14,29 +14,29 @@ import PageHeader from '../components/PageHeader';
 import TrackPill from '../components/TrackPill';
 import { useRequireRole } from '../hooks/useRequireProfile';
 import { MOCK_PEOPLE, type Person } from '../models/people';
-import { USER_DISCIPLINES, disciplineByName } from '../models/disciplines';
+import { disciplineByName } from '../models/disciplines';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
-export interface MentorDashboardProps {
+export interface VolunteerDashboardProps {
   assignedTrack?: string | null;
   participants?: Person[] | null;
 }
 
-export default function MentorDashboard({
+export default function VolunteerDashboard({
   assignedTrack = 'novasphere',
   participants: customParticipants,
-}: MentorDashboardProps) {
-  const { ready, redirect } = useRequireRole(['mentor']);
+}: VolunteerDashboardProps) {
+  const { ready, redirect } = useRequireRole(['volunteer']);
 
-  // Initial mentees default to mock participants if custom list not provided
-  const initialMentees = customParticipants !== undefined
+  // Initial roster defaults to mock participants if custom list not provided
+  const initialRoster = customParticipants !== undefined
     ? customParticipants
     : MOCK_PEOPLE.filter(
         (p) => p.role === 'participant' || p.role === 'attendee',
       );
 
-  const [mentees, setMentees] = useState<Person[]>(initialMentees ?? []);
+  const [roster, setRoster] = useState<Person[]>(initialRoster ?? []);
   const [filter, setFilter] = useState<'all' | 'checkedIn' | 'pending'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -53,7 +53,7 @@ export default function MentorDashboard({
   const trackInfo = assignedTrack ? disciplineByName(assignedTrack) : undefined;
 
   const toggleCheckIn = (personId: string) => {
-    setMentees((prev) =>
+    setRoster((prev) =>
       prev.map((p) => {
         if (p.id === personId) {
           const nextStatus = p.status === 'checkedIn' ? 'validated' : 'checkedIn';
@@ -64,7 +64,7 @@ export default function MentorDashboard({
     );
   };
 
-  const filteredMentees = (mentees ?? []).filter((p) => {
+  const filteredRoster = (roster ?? []).filter((p) => {
     const matchesSearch =
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.org.toLowerCase().includes(searchQuery.toLowerCase());
@@ -75,15 +75,15 @@ export default function MentorDashboard({
     return true;
   });
 
-  const checkedInCount = (mentees ?? []).filter((p) => p.status === 'checkedIn').length;
-  const totalCount = (mentees ?? []).length;
+  const checkedInCount = (roster ?? []).filter((p) => p.status === 'checkedIn').length;
+  const totalCount = (roster ?? []).length;
 
   return (
     <AppShell>
       <PageHeader
-        label="Mentor Dashboard"
-        title="Mentor Hub & Track Management"
-        sub="Manage your assigned track, review participant check-ins, and support summit mentees."
+        label="Volunteer Dashboard"
+        title="Volunteer Hub & Track Management"
+        sub="Manage your assigned track, review participant check-ins, and support summit attendees."
       />
 
       <div className="space-y-6">
@@ -140,7 +140,7 @@ export default function MentorDashboard({
                 <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                 <input
                   type="text"
-                  placeholder="Search mentees..."
+                  placeholder="Search participants..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="h-8 w-full rounded-lg border border-border bg-background/50 pl-8 pr-3 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-glow"
@@ -193,10 +193,10 @@ export default function MentorDashboard({
                 No assigned track
               </h3>
               <p className="mt-1 text-xs text-muted-foreground">
-                Please contact the summit coordinator to assign a track to your mentor account.
+                Please contact the summit coordinator to assign a track to your volunteer account.
               </p>
             </div>
-          ) : filteredMentees.length === 0 ? (
+          ) : filteredRoster.length === 0 ? (
             <div className="rounded-xl border border-dashed border-border p-8 text-center">
               <Users className="mx-auto h-8 w-8 text-muted-foreground" />
               <h3 className="mt-2 font-display text-base font-semibold">
@@ -210,7 +210,7 @@ export default function MentorDashboard({
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredMentees.map((p) => {
+              {filteredRoster.map((p) => {
                 const isCheckedIn = p.status === 'checkedIn';
                 return (
                   <div

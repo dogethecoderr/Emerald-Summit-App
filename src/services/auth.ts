@@ -262,6 +262,18 @@ export async function getCurrentProfile(): Promise<Profile | null> {
   if (session == null) return null;
   const profiles = readProfiles();
   const profile = profiles[session.user.email] ?? null;
+
+  // Migrate renamed roles from earlier demos.
+  if (profile?.role === 'mentor' || profile?.role === 'parent') {
+    const migrated = {
+      ...profile,
+      role: profile.role === 'parent' ? 'attendee' : 'volunteer',
+    };
+    profiles[session.user.email] = migrated;
+    localStorage.setItem(PROFILE_KEY, JSON.stringify(profiles));
+    return migrated;
+  }
+
   return profile;
 }
 
