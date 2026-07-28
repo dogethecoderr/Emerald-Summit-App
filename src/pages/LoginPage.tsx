@@ -3,7 +3,12 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { SIGN_IN_ROLES } from '../models/roles';
-import { signInWithGoogle, signInWithLinkedIn } from '../services/auth';
+import {
+  getCurrentProfile,
+  needsProfileSetup,
+  signInWithGoogle,
+  signInWithLinkedIn,
+} from '../services/auth';
 import GoogleIcon from '../components/GoogleIcon';
 import LinkedInIcon from '../components/LinkedInIcon';
 import SummitLogo from '../components/SummitLogo';
@@ -33,11 +38,16 @@ export default function LoginPage() {
     );
   }
 
+  const finishSignIn = async () => {
+    const profile = await getCurrentProfile();
+    navigate(needsProfileSetup(profile) ? '/profile' : '/home', { replace: true });
+  };
+
   const handleGoogle = async () => {
     setIsLoading(true);
     try {
       await signInWithGoogle(role.name);
-      navigate('/profile');
+      await finishSignIn();
     } catch (error) {
       toast.error(`Google sign-in failed: ${error}`);
       setIsLoading(false);
@@ -48,7 +58,7 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       await signInWithLinkedIn(role.name);
-      navigate('/profile');
+      await finishSignIn();
     } catch (error) {
       toast.error(`LinkedIn sign-in failed: ${error}`);
       setIsLoading(false);

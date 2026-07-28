@@ -114,7 +114,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/home');
+    navigate('/home', { replace: true });
   };
 
   return (

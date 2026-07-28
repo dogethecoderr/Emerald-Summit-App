@@ -411,7 +411,7 @@ function SettingsHub({ profile }: { profile: Profile }) {
     setSigningOut(true);
     try {
       await signOut();
-      navigate('/home');
+      navigate('/home', { replace: true });
     } catch (error) {
       setSigningOut(false);
       toast.error(`Sign out failed: ${error}`);

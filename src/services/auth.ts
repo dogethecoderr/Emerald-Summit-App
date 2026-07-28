@@ -113,29 +113,63 @@ export async function signInWithEmail(
   });
 }
 
-/** Instant "Google" sign-in with a friendly demo account. */
+/** Instant "Google" sign-in with a friendly per-role demo account. */
 export async function signInWithGoogle(roleName: string): Promise<void> {
   await wait();
   savePendingRole(roleName);
-  const email = 'demo.student@gmail.com';
-  const existing = readProfiles()[email];
-  setSession({
-    id: (existing?.id as string) ?? randomId(),
-    email,
-    fullName: (existing?.name as string) ?? 'Demo Student',
-  });
+  const email = `demo.${roleName}@gmail.com`;
+  applyRoleToDemoAccount(email, roleName, defaultDemoName(roleName));
 }
 
-/** Instant "LinkedIn" sign-in with a friendly demo account. */
+/** Instant "LinkedIn" sign-in with a friendly per-role demo account. */
 export async function signInWithLinkedIn(roleName: string): Promise<void> {
   await wait();
   savePendingRole(roleName);
-  const email = 'demo.student@linkedin.com';
-  const existing = readProfiles()[email];
-  setSession({
-    id: (existing?.id as string) ?? randomId(),
+  const email = `demo.${roleName}@linkedin.com`;
+  applyRoleToDemoAccount(email, roleName, defaultDemoName(roleName));
+}
+
+function defaultDemoName(roleName: string): string {
+  switch (roleName) {
+    case 'volunteer':
+      return 'Demo Volunteer';
+    case 'attendee':
+      return 'Demo Attendee';
+    case 'expert':
+      return 'Demo Expert';
+    case 'participant':
+      return 'Demo Student';
+    default:
+      return 'Demo User';
+  }
+}
+
+/** Upsert the demo profile for this email so the selected role always wins. */
+function applyRoleToDemoAccount(
+  email: string,
+  roleName: string,
+  fallbackName: string,
+): void {
+  const profiles = readProfiles();
+  const existing = profiles[email];
+  const id = (existing?.id as string | undefined) ?? randomId();
+  const name = (existing?.name as string | undefined) ?? fallbackName;
+
+  profiles[email] = {
+    ...(existing ?? {}),
+    id,
     email,
-    fullName: (existing?.name as string) ?? 'Demo Student',
+    name,
+    role: roleName,
+    // Keep an existing completed profile; first-time role accounts still need setup.
+    profile_setup_complete: existing?.profile_setup_complete === true,
+  };
+  localStorage.setItem(PROFILE_KEY, JSON.stringify(profiles));
+
+  setSession({
+    id,
+    email,
+    fullName: name,
   });
 }
 
@@ -218,12 +252,12 @@ export async function saveProfile(input: SaveProfileInput): Promise<void> {
   const existing = profiles[email];
 
   let role = existing?.role as string | undefined;
-  if (role == null) {
-    const pending = takePendingRole();
-    if (pending == null) {
-      throw new Error('No role selected. Go back, pick a role, and sign in.');
-    }
+  const pending = takePendingRole();
+  // Newly chosen role (from the role picker) always wins over a stale profile role.
+  if (pending != null) {
     role = pending;
+  } else if (role == null) {
+    throw new Error('No role selected. Go back, pick a role, and sign in.');
   }
 
   const next: Profile = {
@@ -307,5 +341,6 @@ export async function updateProfileSettings(
 
 export async function signOut(): Promise<void> {
   localStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem(PENDING_ROLE_KEY);
   emit();
 }
