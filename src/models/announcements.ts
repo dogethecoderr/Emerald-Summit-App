@@ -63,13 +63,13 @@ export const MOCK_ANNOUNCEMENTS: Announcement[] = [
   },
   {
     id: 'a4',
-    title: 'Mentor Orientation Details Coming',
-    body: 'A dedicated mentor orientation will be held on the morning of the summit. Details including time and location will be posted here once the date is set.',
+    title: 'Volunteer Orientation Details Coming',
+    body: 'A dedicated volunteer orientation will be held on the morning of the summit. Details including time and location will be posted here once the date is set.',
     category: 'Logistics',
     date: 'Jun 27',
     pinned: false,
     author: 'Summit Ops Team',
-    audience: 'Mentors',
+    audience: 'Volunteers',
     attachments: [
       { title: 'Code of Conduct & Community Agreement', type: 'PDF', size: '420 KB' },
       { title: 'Emerald High Campus Map', type: 'PDF', size: '950 KB' },
