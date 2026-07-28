@@ -6,9 +6,11 @@ module.exports = {
     extend: {
       fontFamily: {
         sans: ['"Instrument Sans"', 'system-ui', 'sans-serif'],
-        display: ['"Fraunces"', 'Georgia', 'serif'],
+        display: ['"Satoshi"', 'system-ui', 'sans-serif'],
         // Landing-page display + label faces (scoped, not global headings)
-        hero: ['"Fraunces"', 'Georgia', 'serif'],
+        hero: ['"Satoshi"', 'system-ui', 'sans-serif'],
+        // Hero title only — Fraunces
+        title: ['"Fraunces"', 'Georgia', 'serif'],
         mono: ['"Spline Sans Mono"', 'ui-monospace', 'monospace'],
       },
       colors: {
