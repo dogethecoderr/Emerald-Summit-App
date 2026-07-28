@@ -41,7 +41,10 @@ export default function OrbitalUniverses() {
 
   if (reduceMotion) {
     return (
-      <section className="mx-auto max-w-6xl px-6 py-24 lg:px-14">
+      <section
+        id="universes"
+        className="mx-auto max-w-6xl scroll-mt-20 px-6 py-24 lg:scroll-mt-24 lg:px-14"
+      >
         <SectionHeading />
         <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {USER_DISCIPLINES.map((d) => (
@@ -69,7 +72,11 @@ export default function OrbitalUniverses() {
   const R = 44;
 
   return (
-    <section ref={sectionRef} className="relative h-[440vh]">
+    <section
+      id="universes"
+      ref={sectionRef}
+      className="relative h-[440vh] scroll-mt-20 lg:scroll-mt-24"
+    >
       <div className="sticky top-0 flex h-screen flex-col items-center justify-center overflow-hidden">
         {/* active-tinted ambient glow */}
         <motion.div

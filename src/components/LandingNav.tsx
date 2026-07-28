@@ -1,0 +1,124 @@
+import { useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Menu, X } from 'lucide-react';
+import BrandMark from './BrandMark';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+
+const SECTION_LINKS = [
+  { id: 'about', label: 'About' },
+  { id: 'universes', label: 'Tracks' },
+];
+
+/**
+ * Sticky marketing navbar shared by the landing page and the /app showcase.
+ * "About"/"Universes" are anchors on "/" — when triggered from elsewhere
+ * they route home and pass the target id via nav state, which WelcomePage
+ * picks up on mount to finish the scroll.
+ */
+export default function LandingNav() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [open, setOpen] = useState(false);
+
+  const goToSection = (id: string) => {
+    setOpen(false);
+    if (location.pathname === '/') {
+      document
+        .getElementById(id)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      navigate('/', { state: { scrollTo: id } });
+    }
+  };
+
+  return (
+    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/75 backdrop-blur-xl">
+      <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between px-6 lg:h-20 lg:px-14">
+        <BrandMark
+          logoClassName="h-8 w-8 lg:h-10 lg:w-10"
+          titleClassName="text-sm font-semibold tracking-tight lg:text-base"
+          showSubtitle={false}
+          gap="gap-2.5"
+        />
+
+        <nav className="hidden items-center gap-1 md:flex">
+          {SECTION_LINKS.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => goToSection(s.id)}
+              className="rounded-full px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              {s.label}
+            </button>
+          ))}
+          <Link
+            to="/app"
+            className={cn(
+              'rounded-full px-4 py-2 text-sm font-medium transition-colors hover:bg-accent',
+              location.pathname === '/app'
+                ? 'text-emerald-mint'
+                : 'text-muted-foreground hover:text-foreground',
+            )}
+          >
+            App
+          </Link>
+        </nav>
+
+        <div className="hidden items-center gap-2 md:flex">
+          <Button
+            variant="outline"
+            className="h-10 rounded-full border-border/80 bg-secondary/30 px-6 text-sm hover:border-emerald-glow/50 hover:bg-accent"
+            onClick={() => navigate('/home')}
+          >
+            Sign in
+          </Button>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          className="rounded-lg p-2 text-foreground md:hidden"
+          aria-label="Toggle menu"
+          aria-expanded={open}
+        >
+          {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </button>
+      </div>
+
+      {open && (
+        <div className="border-t border-border/60 bg-background/95 px-6 py-4 backdrop-blur-xl md:hidden">
+          <div className="flex flex-col gap-1">
+            {SECTION_LINKS.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => goToSection(s.id)}
+                className="rounded-lg px-3 py-2.5 text-left text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
+              >
+                {s.label}
+              </button>
+            ))}
+            <Link
+              to="/app"
+              onClick={() => setOpen(false)}
+              className="rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
+            >
+              App
+            </Link>
+            <Button
+              className="glow-emerald mt-2 h-11 w-full rounded-full bg-primary text-sm font-semibold hover:bg-emerald"
+              onClick={() => {
+                setOpen(false);
+                navigate('/home');
+              }}
+            >
+              Sign in
+            </Button>
+          </div>
+        </div>
+      )}
+    </header>
+  );
+}

@@ -1,43 +1,33 @@
-import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, useReducedMotion, type Variants } from 'framer-motion';
 import {
   ArrowRight,
   CalendarDays,
   Clock3,
   MapPin,
-  Megaphone,
-  QrCode,
-  Route,
   Sparkles,
 } from 'lucide-react';
-import SummitLogo from '../components/SummitLogo';
+import LandingNav from '../components/LandingNav';
+import LandingFooter from '../components/LandingFooter';
 import OrbitalUniverses from '../components/OrbitalUniverses';
 import { USER_DISCIPLINES } from '../models/disciplines';
 import { Button } from '@/components/ui/button';
 
 const FACTS = [
   { icon: CalendarDays, text: 'March 2027' },
-  { icon: Clock3, text: '9:00 AM – 5:45 PM' },
+  { icon: Clock3, text: '9:00 AM – 5:00 PM' },
   { icon: MapPin, text: 'Emerald High School, Dublin, CA' },
 ];
 
-const FEATURES = [
-  {
-    icon: Route,
-    title: 'Build your day, your way',
-    body: 'Browse 20+ tracks across six disciplines and assemble a conflict-free schedule with live seat counts and walking times.',
-  },
-  {
-    icon: Megaphone,
-    title: 'Never miss a change',
-    body: 'Announcements land as push, feed, and email at once — room moves and schedule shifts reach you before you need to ask.',
-  },
-  {
-    icon: QrCode,
-    title: 'One-tap check-in',
-    body: 'A clean registration table on the day: volunteers confirm you in seconds and your whole day is already on your phone.',
-  },
+const ABOUT_STATS = [
+  { value: '20+', label: 'Tracks' },
+  { value: '30+', label: 'Visiting experts' },
+  { value: '6', label: 'Universes' },
+  { value: '1', label: 'Day' },
 ];
+
+
 
 /** Container that cascades its children in on mount. */
 const stagger: Variants = {
@@ -68,7 +58,23 @@ const lineReveal: Variants = {
 
 export default function WelcomePage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const reduceMotion = useReducedMotion();
+
+  // Cross-route anchor nav: LandingNav sends { scrollTo: id } when the link
+  // is clicked from a different route; finish the scroll once we've landed.
+  useEffect(() => {
+    const scrollTo = (location.state as { scrollTo?: string } | null)
+      ?.scrollTo;
+    if (!scrollTo) return;
+    const frame = requestAnimationFrame(() => {
+      document
+        .getElementById(scrollTo)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    window.history.replaceState({}, '');
+    return () => cancelAnimationFrame(frame);
+  }, [location.state]);
 
   return (
     <div className="relative min-h-screen overflow-clip">
@@ -88,44 +94,12 @@ export default function WelcomePage() {
         aria-hidden
       />
 
-      <div className="relative mx-auto flex min-h-screen max-w-[1440px] flex-col px-6 lg:px-14">
-        {/* top bar */}
-        <motion.header
-          className="flex items-center justify-between py-6 lg:py-8"
-          initial={{ opacity: 0, y: -12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        >
-          <div className="flex items-center gap-2.5 lg:gap-3.5">
-            <motion.div
-              className="h-9 w-9 lg:h-14 lg:w-14"
-              initial={{ opacity: 0, scale: 0.6, rotate: -12 }}
-              animate={{ opacity: 1, scale: 1, rotate: 0 }}
-              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            >
-              <SummitLogo />
-            </motion.div>
-            <div className="leading-tight">
-              <div className="font-hero text-[15px] font-semibold tracking-tight lg:text-2xl">
-                Emerald Summit
-              </div>
-              <div className="text-[11px] text-muted-foreground lg:text-sm">
-                EHS Academic Foundation
-              </div>
-            </div>
-          </div>
-          <Button
-            variant="outline"
-            className="h-9 rounded-full border-border/80 bg-secondary/30 px-5 text-sm text-foreground/90 hover:border-emerald-glow/50 hover:bg-accent hover:text-foreground lg:h-12 lg:px-8 lg:text-base"
-            onClick={() => navigate('/home')}
-          >
-            Sign in
-          </Button>
-        </motion.header>
+      <LandingNav />
 
+      <div className="relative mx-auto flex max-w-[1440px] flex-col px-6 lg:px-14">
         {/* hero */}
         <motion.section
-          className="flex flex-1 flex-col items-center justify-center pb-10 pt-14 text-center lg:pt-16"
+          className="flex flex-col items-center justify-center pb-10 pt-16 text-center lg:pt-20"
           variants={stagger}
           initial="hidden"
           animate="show"
@@ -138,25 +112,23 @@ export default function WelcomePage() {
             Summit ’27 · The Tri-Valley’s largest student-run STEAM summit
           </motion.div>
 
-          <h1 className="mt-7 max-w-5xl font-hero text-5xl font-bold leading-[1.04] tracking-tight sm:text-6xl md:text-7xl xl:text-8xl">
-            <span className="block overflow-hidden pb-[0.08em]">
+          <h1 className="mt-9 font-title text-6xl font-bold leading-[0.98] tracking-tight sm:text-7xl md:text-8xl xl:text-9xl">
+            <span className="block overflow-hidden pb-[0.06em]">
               <motion.span className="block" variants={lineReveal}>
-                One summit.
+                Emerald
               </motion.span>
             </span>
-            <span className="block overflow-hidden pb-[0.08em]">
-              <motion.span className="block text-gradient-emerald" variants={lineReveal}>
-                Six universes.
+            <span className="mt-1 block overflow-hidden pb-[0.06em] sm:mt-2">
+              <motion.span
+                className="block text-gradient-emerald"
+                variants={lineReveal}
+              >
+                Summit
               </motion.span>
             </span>
           </h1>
 
-          <motion.p
-            variants={rise}
-            className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground md:text-lg lg:max-w-2xl lg:text-xl"
-          >
-            20+ tracks, 30+ visiting experts, hundreds of builders — all in one day.
-          </motion.p>
+
 
           <motion.div
             variants={rise}
@@ -185,6 +157,14 @@ export default function WelcomePage() {
               Get started
               <ArrowRight className="ml-1.5 h-4 w-4 transition-transform group-hover:translate-x-1 lg:h-5 lg:w-5" />
             </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="h-12 rounded-full border-border/80 bg-secondary/30 px-8 text-[15px] font-semibold hover:border-emerald-glow/50 hover:bg-accent lg:h-14 lg:px-12 lg:text-lg"
+              onClick={() => navigate('/app')}
+            >
+              Explore the app
+            </Button>
           </motion.div>
 
           {/* discipline strip */}
@@ -209,8 +189,14 @@ export default function WelcomePage() {
 
           {/* scroll cue */}
           {!reduceMotion && (
-            <motion.div
-              className="mt-12 flex flex-col items-center gap-1 text-muted-foreground/60"
+            <motion.button
+              type="button"
+              onClick={() =>
+                document
+                  .getElementById('about')
+                  ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              }
+              className="mt-12 flex flex-col items-center gap-1 text-muted-foreground/60 transition-colors hover:text-emerald-mint"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 1.2, duration: 0.8 }}
@@ -224,40 +210,99 @@ export default function WelcomePage() {
                 transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
                 style={{ transformOrigin: 'top' }}
               />
-            </motion.div>
+            </motion.button>
           )}
         </motion.section>
+
+        {/* about / event summary */}
+        <section
+          id="about"
+          className="scroll-mt-20 py-20 lg:py-28 lg:scroll-mt-24"
+        >
+          <div className="grid gap-12 lg:grid-cols-[1fr_1.05fr] lg:items-center lg:gap-16 xl:gap-24">
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-80px' }}
+              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <p className="font-mono text-xs font-semibold uppercase tracking-[0.25em] text-emerald-mint">
+                About the summit
+              </p>
+              <h2 className="mt-3 font-hero text-3xl font-bold leading-tight tracking-tight sm:text-4xl lg:text-5xl">
+                One summit. <span className="text-gradient-emerald">Six universes.</span>
+              </h2>
+              <p className="mt-5 text-base leading-relaxed text-muted-foreground lg:text-lg">
+                Emerald Summit is the Tri-Valley’s largest student-run STEAM
+                event — a full day where hundreds of builders move between six
+                disciplines (universes), pitch to visiting experts, and leave
+                the event with something better than what they started with.
+              </p>
+              
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Button
+                  size="lg"
+                  className="glow-emerald h-12 rounded-full bg-primary px-7 text-[15px] font-semibold hover:bg-emerald"
+                  onClick={() => navigate('/home')}
+                >
+                  Get started <ArrowRight className="ml-1.5 h-4 w-4" />
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="h-12 rounded-full border-border/80 bg-secondary/30 px-7 text-[15px] font-semibold hover:border-emerald-glow/50 hover:bg-accent"
+                  onClick={() => navigate('/app')}
+                >
+                  Explore the app
+                </Button>
+              </div>
+            </motion.div>
+
+            <motion.div
+              className="grid grid-cols-2 gap-4"
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-80px' }}
+              transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+            >
+              {ABOUT_STATS.map((s) => (
+                <div key={s.label} className="glass rounded-2xl p-6 text-center">
+                  <div className="font-hero text-3xl font-bold text-gradient-emerald lg:text-4xl">
+                    {s.value}
+                  </div>
+                  <div className="mt-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    {s.label}
+                  </div>
+                </div>
+              ))}
+            </motion.div>
+          </div>
+
+          {/* when & where */}
+          <motion.div
+            className="mt-6 glass rounded-2xl p-6"
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-80px' }}
+            transition={{ duration: 0.6, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <h3 className="font-hero text-lg font-semibold">When &amp; where</h3>
+            <ul className="mt-3 flex flex-wrap gap-x-8 gap-y-2 text-sm text-muted-foreground">
+              {FACTS.map(({ icon: Icon, text }) => (
+                <li key={text} className="flex items-center gap-2">
+                  <Icon className="h-4 w-4 text-emerald-mint" /> {text}
+                </li>
+              ))}
+            </ul>
+          </motion.div>
+        </section>
       </div>
 
       {/* six universes — scroll-driven orbit */}
       <OrbitalUniverses />
 
       <div className="relative mx-auto max-w-[1440px] px-6 lg:px-14">
-        {/* feature cards */}
-        <section className="grid gap-4 pb-16 md:grid-cols-3 lg:gap-6">
-          {FEATURES.map(({ icon: Icon, title, body }, i) => (
-            <motion.div
-              key={title}
-              className="glass rounded-2xl p-6 lg:p-8"
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-80px' }}
-              transition={{ duration: 0.55, delay: i * 0.1, ease: [0.16, 1, 0.3, 1] }}
-            >
-              <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald/15 text-emerald-mint ring-1 ring-emerald-glow/25 lg:h-12 lg:w-12">
-                <Icon className="h-5 w-5 lg:h-6 lg:w-6" />
-              </div>
-              <h3 className="font-hero text-[15px] font-semibold lg:text-lg">{title}</h3>
-              <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground lg:text-[15px]">
-                {body}
-              </p>
-            </motion.div>
-          ))}
-        </section>
-
-        <footer className="border-t border-border/60 py-6 text-center text-xs text-muted-foreground">
-          EHS Academic Foundation · Emerald Summit ’27 · Dublin, CA
-        </footer>
+        <LandingFooter />
       </div>
     </div>
   );

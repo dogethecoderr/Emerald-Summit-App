@@ -17,7 +17,7 @@ import { useSchedule } from '../context/ScheduleContext';
 import { signOut } from '../services/auth';
 import { roleByName, USER_ROLES } from '../models/roles';
 import { MOCK_ANNOUNCEMENTS } from '../models/announcements';
-import SummitLogo from './SummitLogo';
+import BrandMark from './BrandMark';
 import { cn } from '@/lib/utils';
 
 interface NavItem {
@@ -114,25 +114,19 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/home');
+    navigate('/home', { replace: true });
   };
 
   return (
     <div className="flex min-h-screen">
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-border/70 bg-card/60 backdrop-blur-xl lg:flex">
-        <div className="flex items-center gap-2.5 px-5 pb-6 pt-6">
-          <div className="h-9 w-9 shrink-0">
-            <SummitLogo />
-          </div>
-          <div className="leading-tight">
-            <div className="font-display text-[15px] font-semibold tracking-tight">
-              Emerald Summit
-            </div>
-            <div className="text-[11px] text-muted-foreground">
-              EHS Academic Foundation
-            </div>
-          </div>
+        <div className="px-5 pb-6 pt-6">
+          <BrandMark
+            logoClassName="h-9 w-9"
+            titleClassName="text-[15px] font-semibold tracking-tight"
+            subtitleClassName="text-[11px] text-muted-foreground"
+          />
         </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto px-3">
@@ -170,14 +164,12 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
       {/* Mobile top bar */}
       <div className="fixed inset-x-0 top-0 z-30 flex items-center justify-between border-b border-border/70 bg-background/80 px-4 py-2.5 backdrop-blur-xl lg:hidden">
-        <div className="flex items-center gap-2">
-          <div className="h-7 w-7">
-            <SummitLogo />
-          </div>
-          <span className="font-display text-sm font-semibold">
-            Emerald Summit
-          </span>
-        </div>
+        <BrandMark
+          logoClassName="h-7 w-7"
+          titleClassName="text-sm font-semibold"
+          showSubtitle={false}
+          gap="gap-2"
+        />
         <button
           onClick={handleSignOut}
           className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
