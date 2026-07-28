@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
 import { USER_DISCIPLINES } from '../models/disciplines';
 import { needsProfileSetup, saveProfile, signOut } from '../services/auth';
-import SummitLogo from '../components/SummitLogo';
+import BrandMark from '../components/BrandMark';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -111,19 +111,12 @@ export default function ProfileSetupPage() {
 
       <div className="relative mx-auto max-w-xl px-6 pb-20">
         <header className="flex items-center justify-between py-5">
-          <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8">
-              <SummitLogo />
-            </div>
-            <div className="leading-tight">
-              <div className="font-display text-sm font-semibold">
-                Emerald Summit
-              </div>
-              <div className="text-[11px] text-muted-foreground">
-                {session?.user.email ?? ''}
-              </div>
-            </div>
-          </div>
+          <BrandMark
+            logoClassName="h-8 w-8"
+            titleClassName="text-sm font-semibold"
+            subtitleClassName="text-[11px] text-muted-foreground"
+            subtitle={session?.user.email ?? ''}
+          />
           <Button
             variant="ghost"
             size="sm"

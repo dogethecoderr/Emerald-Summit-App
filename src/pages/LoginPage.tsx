@@ -11,7 +11,7 @@ import {
 } from '../services/auth';
 import GoogleIcon from '../components/GoogleIcon';
 import LinkedInIcon from '../components/LinkedInIcon';
-import SummitLogo from '../components/SummitLogo';
+import BrandMark from '../components/BrandMark';
 import { Button } from '@/components/ui/button';
 
 export default function LoginPage() {
@@ -82,19 +82,13 @@ export default function LoginPage() {
           >
             <ChevronLeft className="h-4 w-4" /> Back
           </button>
-          <div className="flex items-center gap-4">
-            <div className="h-14 w-14 lg:h-[4.5rem] lg:w-[4.5rem]">
-              <SummitLogo />
-            </div>
-            <div className="hidden leading-tight sm:block">
-              <div className="font-display text-lg font-semibold lg:text-2xl">
-                Emerald Summit
-              </div>
-              <div className="text-xs text-muted-foreground lg:text-sm">
-                EHS Academic Foundation
-              </div>
-            </div>
-          </div>
+          <BrandMark
+            logoClassName="h-14 w-14 lg:h-[4.5rem] lg:w-[4.5rem]"
+            titleClassName="text-lg font-semibold lg:text-2xl"
+            subtitleClassName="text-xs text-muted-foreground lg:text-sm"
+            textWrapperClassName="hidden leading-tight sm:block"
+            gap="gap-4"
+          />
           <span className="w-14" aria-hidden />
         </header>
 
