@@ -27,7 +27,7 @@ export default function LandingFooter() {
   };
 
   return (
-    <footer className="bg-[#0c1712] text-white/70">
+    <footer className="bg-[#101c36] text-white/70">
       <div className="mx-auto max-w-[1440px] px-6 py-14 lg:px-14 lg:py-16">
         <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:justify-between lg:gap-16">
           <div className="max-w-xs">

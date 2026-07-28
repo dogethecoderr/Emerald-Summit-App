@@ -17,7 +17,7 @@ export default function CtaBand() {
           Get involved
         </p>
         <h2 className="mt-4 font-hero text-4xl font-bold tracking-tight sm:text-5xl">
-          Your universe is waiting.
+          Start the trek.
         </h2>
         <p className="mt-4 text-sm text-white/80 lg:text-base">
           January 2027 · Emerald High School, Dublin, CA · 100% free

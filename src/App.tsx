@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
+import ScrollToTop from './components/ScrollToTop';
 import WelcomePage from './pages/WelcomePage';
 import AppShowcasePage from './pages/AppShowcasePage';
 import HomePage from './pages/HomePage';
@@ -15,23 +16,26 @@ import VolunteerDashboard from './pages/VolunteerDashboard';
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<WelcomePage />} />
-      <Route path="/app" element={<AppShowcasePage />} />
-      <Route path="/home" element={<HomePage />} />
-      <Route path="/login/:role" element={<LoginPage />} />
-      <Route path="/profile" element={<ProfileSetupPage />} />
-      <Route path="/schedule" element={<SchedulePage />} />
-      <Route path="/announcements" element={<AnnouncementsPage />} />
-      <Route path="/profiles" element={<Navigate to="/settings" replace />} />
-      <Route path="/settings" element={<SettingsPage />} />
-      <Route path="/settings/:section" element={<SettingsPage />} />
-      <Route path="/directory" element={<DirectoryPage />} />
-      <Route path="/resources" element={<ResourcesPage />} />
-      <Route path="/judging" element={<JudgingPage />} />
-      <Route path="/student" element={<StudentPage />} />
-      <Route path="/volunteer" element={<VolunteerDashboard />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <>
+      <ScrollToTop />
+      <Routes>
+        <Route path="/" element={<WelcomePage />} />
+        <Route path="/app" element={<AppShowcasePage />} />
+        <Route path="/home" element={<HomePage />} />
+        <Route path="/login/:role" element={<LoginPage />} />
+        <Route path="/profile" element={<ProfileSetupPage />} />
+        <Route path="/schedule" element={<SchedulePage />} />
+        <Route path="/announcements" element={<AnnouncementsPage />} />
+        <Route path="/profiles" element={<Navigate to="/settings" replace />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/settings/:section" element={<SettingsPage />} />
+        <Route path="/directory" element={<DirectoryPage />} />
+        <Route path="/resources" element={<ResourcesPage />} />
+        <Route path="/judging" element={<JudgingPage />} />
+        <Route path="/student" element={<StudentPage />} />
+        <Route path="/volunteer" element={<VolunteerDashboard />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   );
 }
