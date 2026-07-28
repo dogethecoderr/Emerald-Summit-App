@@ -53,11 +53,11 @@ const QUICK_ACTIONS: Record<string, QuickAction[]> = {
     },
   ],
   attendee: [],
-  mentor: [
+  volunteer: [
     {
-      to: '/student',
-      label: "Follow your student's day",
-      sub: 'Sessions, progress, and updates',
+      to: '/volunteer',
+      label: 'Open Volunteer Hub',
+      sub: 'Track roster, check-ins, and attendee support',
       icon: BookUser,
     },
   ],

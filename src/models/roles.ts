@@ -51,18 +51,12 @@ export const USER_ROLES: RoleInfo[] = [
     color: '#0C7A55',
   },
   {
-    name: 'mentor',
-    label: 'Mentor',
-    description: "Follow your student's day and receive activity updates.",
-    icon: Users, // family_restroom_outlined
+    name: 'volunteer',
+    label: 'Volunteer',
+    description:
+      'Manage your assigned track, check in participants, and support summit attendees.',
+    icon: Users,
     color: '#E11D48',
-  },
-  {
-    name: 'parent',
-    label: 'Parent',
-    description: 'Spectate student schedule, track progress, and view summit events.',
-    icon: Eye,
-    color: '#D97706',
   },
   {
     name: 'expert',

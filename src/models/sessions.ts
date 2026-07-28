@@ -105,7 +105,7 @@ export const MOCK_SESSIONS: Session[] = [
   {
     id: 's5',
     title: 'Rocket Science & Space Exploration',
-    speaker: 'NovaSphere Mentors',
+    speaker: 'NovaSphere Volunteers',
     time: '1:00 PM',
     location: 'Science Wing',
     room: 'F',
@@ -128,7 +128,7 @@ export const MOCK_SESSIONS: Session[] = [
     track: 'ventureverse',
     duration: '90 min',
     description:
-      'Students pitch business concepts to a panel of mentors and receive live feedback.',
+      'Students pitch business concepts to a panel of volunteers and receive live feedback.',
     capacity: 20,
     enrolled: 17,
     spectatorCap: 20,
