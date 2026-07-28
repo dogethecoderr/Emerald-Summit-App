@@ -9,13 +9,15 @@ import {
   Sparkles,
 } from 'lucide-react';
 import LandingNav from '../components/LandingNav';
+import FaqSection from '../components/FaqSection';
+import CtaBand from '../components/CtaBand';
 import LandingFooter from '../components/LandingFooter';
 import OrbitalUniverses from '../components/OrbitalUniverses';
 import { USER_DISCIPLINES } from '../models/disciplines';
 import { Button } from '@/components/ui/button';
 
 const FACTS = [
-  { icon: CalendarDays, text: 'March 2027' },
+  { icon: CalendarDays, text: 'January 2027' },
   { icon: Clock3, text: '9:00 AM – 5:00 PM' },
   { icon: MapPin, text: 'Emerald High School, Dublin, CA' },
 ];
@@ -302,8 +304,12 @@ export default function WelcomePage() {
       <OrbitalUniverses />
 
       <div className="relative mx-auto max-w-[1440px] px-6 lg:px-14">
-        <LandingFooter />
+        <FaqSection />
       </div>
+
+      <CtaBand />
+
+      <LandingFooter />
     </div>
   );
 }

@@ -77,7 +77,7 @@ export default function OrbitalUniverses() {
       ref={sectionRef}
       className="relative h-[440vh] scroll-mt-20 lg:scroll-mt-24"
     >
-      <div className="sticky top-0 flex h-screen flex-col items-center justify-center overflow-hidden">
+      <div className="sticky top-0 flex h-screen flex-col items-center justify-center gap-9 overflow-hidden lg:gap-12">
         {/* active-tinted ambient glow */}
         <motion.div
           key={`glow-${active}`}
@@ -93,7 +93,7 @@ export default function OrbitalUniverses() {
         </div>
 
         {/* orbit stage */}
-        <div className="relative z-10 mt-6 aspect-square w-[min(86vw,540px)]">
+        <div className="relative z-10 aspect-square w-[min(86vw,540px)]">
           {/* orbit guide ring */}
           <div
             className="absolute inset-[6%] rounded-full border border-emerald-glow/15"
@@ -180,24 +180,26 @@ export default function OrbitalUniverses() {
           </div>
         </div>
 
-        {/* progress rail */}
-        <div className="relative z-10 mt-8 flex items-center gap-2">
-          {USER_DISCIPLINES.map((d, i) => (
-            <span
-              key={d.name}
-              className="h-1.5 rounded-full transition-all duration-300"
-              style={{
-                width: i === active ? 26 : 8,
-                background: i === active ? d.color : 'hsl(var(--muted-foreground) / 0.35)',
-              }}
-              aria-hidden
-            />
-          ))}
-        </div>
+        {/* progress rail + caption, kept close together as one group */}
+        <div className="relative z-10 flex flex-col items-center gap-3">
+          <div className="flex items-center gap-2">
+            {USER_DISCIPLINES.map((d, i) => (
+              <span
+                key={d.name}
+                className="h-1.5 rounded-full transition-all duration-300"
+                style={{
+                  width: i === active ? 26 : 8,
+                  background: i === active ? d.color : 'hsl(var(--muted-foreground) / 0.35)',
+                }}
+                aria-hidden
+              />
+            ))}
+          </div>
 
-        <p className="relative z-10 mt-5 text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground/70">
-          Scroll to explore
-        </p>
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground/70">
+            Scroll to explore
+          </p>
+        </div>
       </div>
     </section>
   );
@@ -210,7 +212,7 @@ function SectionHeading() {
         The six universes
       </p>
       <h2 className="mt-3 max-w-3xl font-hero text-3xl font-bold leading-tight tracking-tight sm:text-4xl lg:text-5xl">
-        One summit, <span className="text-gradient-emerald">six worlds</span> to explore
+        <span className="text-gradient-emerald">Six universes</span> to explore...
       </h2>
     </>
   );
