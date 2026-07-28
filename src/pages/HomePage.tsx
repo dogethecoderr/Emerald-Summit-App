@@ -16,7 +16,7 @@ import { MOCK_ANNOUNCEMENTS } from '../models/announcements';
 import type { PersonStatus } from '../models/personStatus';
 import { needsProfileSetup, profileToPerson } from '../services/auth';
 import { useSchedule } from '../context/ScheduleContext';
-import SummitLogo from '../components/SummitLogo';
+import BrandMark from '../components/BrandMark';
 import AppShell from '../components/AppShell';
 import PageHeader from '../components/PageHeader';
 import FeaturedSessionsCard from '../components/FeaturedSessionsCard';
@@ -81,19 +81,12 @@ function RolePicker() {
           >
             <ChevronLeft className="h-4 w-4" /> Back
           </button>
-          <div className="flex items-center gap-4">
-            <div className="h-14 w-14 lg:h-[4.5rem] lg:w-[4.5rem]">
-              <SummitLogo />
-            </div>
-            <div className="leading-tight">
-              <div className="font-display text-lg font-semibold lg:text-2xl">
-                Emerald Summit
-              </div>
-              <div className="text-xs text-muted-foreground lg:text-sm">
-                EHS Academic Foundation
-              </div>
-            </div>
-          </div>
+          <BrandMark
+            logoClassName="h-14 w-14 lg:h-[4.5rem] lg:w-[4.5rem]"
+            titleClassName="text-lg font-semibold lg:text-2xl"
+            subtitleClassName="text-xs text-muted-foreground lg:text-sm"
+            gap="gap-4"
+          />
           <span className="w-14" aria-hidden />
         </header>
 
