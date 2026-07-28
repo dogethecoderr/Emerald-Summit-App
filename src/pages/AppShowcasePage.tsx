@@ -292,9 +292,9 @@ export default function AppShowcasePage() {
             <ArrowRight className="ml-1.5 h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Button>
         </motion.section>
-
-        <LandingFooter />
       </div>
+
+      <LandingFooter />
     </div>
   );
 }
