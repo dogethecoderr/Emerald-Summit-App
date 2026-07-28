@@ -10,6 +10,8 @@ import DirectoryPage from './pages/DirectoryPage';
 import ResourcesPage from './pages/ResourcesPage';
 import JudgingPage from './pages/JudgingPage';
 import StudentPage from './pages/StudentPage';
+import MentorDashboard from './pages/MentorDashboard';
+import ParentSpectatorView from './pages/ParentSpectatorView';
 
 export default function App() {
   return (
@@ -27,6 +29,8 @@ export default function App() {
       <Route path="/resources" element={<ResourcesPage />} />
       <Route path="/judging" element={<JudgingPage />} />
       <Route path="/student" element={<StudentPage />} />
+      <Route path="/mentor" element={<MentorDashboard />} />
+      <Route path="/parent" element={<ParentSpectatorView />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

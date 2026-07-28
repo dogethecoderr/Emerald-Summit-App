@@ -58,6 +58,13 @@ export const USER_ROLES: RoleInfo[] = [
     color: '#E11D48',
   },
   {
+    name: 'parent',
+    label: 'Parent',
+    description: 'Spectate student schedule, track progress, and view summit events.',
+    icon: Eye,
+    color: '#D97706',
+  },
+  {
     name: 'expert',
     label: 'Expert',
     description: 'View your judging assignments and navigate between rooms.',
