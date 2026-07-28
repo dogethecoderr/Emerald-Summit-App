@@ -6,7 +6,7 @@ export interface JudgingAssignment {
   /** Session id from MOCK_SESSIONS. */
   sessionId: string;
   /** What the expert does there. */
-  duty: 'Lead Judge' | 'Panel Judge' | 'Mentor Feedback';
+  duty: 'Lead Judge' | 'Panel Judge' | 'Volunteer Feedback';
   /** Free-form judging notes from the track's ambassador. */
   note?: string;
 }
@@ -28,7 +28,7 @@ export const MOCK_ASSIGNMENTS: JudgingAssignment[] = [
   {
     id: 'j3',
     sessionId: 's8',
-    duty: 'Mentor Feedback',
+    duty: 'Volunteer Feedback',
   },
   {
     id: 'j4',
