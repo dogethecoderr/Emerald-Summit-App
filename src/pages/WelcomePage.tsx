@@ -272,7 +272,10 @@ export default function WelcomePage() {
                   <div
                     key={s.label}
                     className="glass rounded-2xl p-6 text-center"
-                    style={{ borderColor: 'rgba(30, 58, 107, 0.28)' }}
+                    style={{
+                      borderColor: 'rgba(30, 58, 107, 0.65)',
+                      borderWidth: '2px',
+                    }}
                   >
                     <div className="font-hero text-3xl font-bold text-gradient-emerald lg:text-4xl">
                       {s.value}
