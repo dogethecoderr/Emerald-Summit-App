@@ -34,11 +34,11 @@ export default function LandingNav() {
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/75 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0d2a1e]/85 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between px-6 lg:h-20 lg:px-14">
         <BrandMark
           logoClassName="h-8 w-8 lg:h-10 lg:w-10"
-          titleClassName="text-sm font-semibold tracking-tight lg:text-base"
+          titleClassName="text-sm font-semibold tracking-tight text-white lg:text-base"
           showSubtitle={false}
           gap="gap-2.5"
         />
@@ -49,7 +49,7 @@ export default function LandingNav() {
               key={s.id}
               type="button"
               onClick={() => goToSection(s.id)}
-              className="rounded-full px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              className="rounded-full px-4 py-2 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white"
             >
               {s.label}
             </button>
@@ -57,10 +57,10 @@ export default function LandingNav() {
           <Link
             to="/app"
             className={cn(
-              'rounded-full px-4 py-2 text-sm font-medium transition-colors hover:bg-accent',
+              'rounded-full px-4 py-2 text-sm font-medium transition-colors hover:bg-white/10',
               location.pathname === '/app'
-                ? 'text-emerald-mint'
-                : 'text-muted-foreground hover:text-foreground',
+                ? 'text-emerald-300'
+                : 'text-white/70 hover:text-white',
             )}
           >
             App
@@ -69,8 +69,7 @@ export default function LandingNav() {
 
         <div className="hidden items-center gap-2 md:flex">
           <Button
-            variant="outline"
-            className="h-10 rounded-full border-border/80 bg-secondary/30 px-6 text-sm hover:border-emerald-glow/50 hover:bg-accent"
+            className="h-10 rounded-full bg-white px-6 text-sm font-semibold text-emerald-950 hover:bg-white/90"
             onClick={() => navigate('/home')}
           >
             Sign in
@@ -80,7 +79,7 @@ export default function LandingNav() {
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
-          className="rounded-lg p-2 text-foreground md:hidden"
+          className="rounded-lg p-2 text-white md:hidden"
           aria-label="Toggle menu"
           aria-expanded={open}
         >
@@ -89,14 +88,14 @@ export default function LandingNav() {
       </div>
 
       {open && (
-        <div className="border-t border-border/60 bg-background/95 px-6 py-4 backdrop-blur-xl md:hidden">
+        <div className="border-t border-white/10 bg-[#0d2a1e]/95 px-6 py-4 backdrop-blur-xl md:hidden">
           <div className="flex flex-col gap-1">
             {SECTION_LINKS.map((s) => (
               <button
                 key={s.id}
                 type="button"
                 onClick={() => goToSection(s.id)}
-                className="rounded-lg px-3 py-2.5 text-left text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
+                className="rounded-lg px-3 py-2.5 text-left text-sm font-medium text-white/70 hover:bg-white/10 hover:text-white"
               >
                 {s.label}
               </button>
@@ -104,12 +103,12 @@ export default function LandingNav() {
             <Link
               to="/app"
               onClick={() => setOpen(false)}
-              className="rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
+              className="rounded-lg px-3 py-2.5 text-sm font-medium text-white/70 hover:bg-white/10 hover:text-white"
             >
               App
             </Link>
             <Button
-              className="glow-emerald mt-2 h-11 w-full rounded-full bg-primary text-sm font-semibold hover:bg-emerald"
+              className="mt-2 h-11 w-full rounded-full bg-white text-sm font-semibold text-emerald-950 hover:bg-white/90"
               onClick={() => {
                 setOpen(false);
                 navigate('/home');

@@ -8,6 +8,7 @@ import {
 } from 'framer-motion';
 import SummitLogo from './SummitLogo';
 import { USER_DISCIPLINES } from '../models/disciplines';
+import { tracksForUniverse } from '../models/tracks';
 
 /**
  * Scroll-driven "solar system" of the six disciplines.
@@ -43,24 +44,29 @@ export default function OrbitalUniverses() {
     return (
       <section
         id="universes"
-        className="mx-auto max-w-6xl scroll-mt-20 px-6 py-24 lg:scroll-mt-24 lg:px-14"
+        className="scroll-mt-20 bg-navy px-6 py-24 lg:scroll-mt-24 lg:px-14"
       >
-        <SectionHeading />
-        <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {USER_DISCIPLINES.map((d) => (
-            <div key={d.name} className="glass rounded-2xl p-6">
-              <span
-                className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-full"
-                style={{
-                  background: `radial-gradient(circle at 30% 30%, ${d.color}, ${d.color}22)`,
-                  boxShadow: `0 0 24px -4px ${d.color}88`,
-                }}
-                aria-hidden
-              />
-              <h3 className="font-display text-lg font-semibold">{d.label}</h3>
-              <p className="mt-1 text-sm text-muted-foreground">{d.description}</p>
-            </div>
-          ))}
+        <div className="mx-auto max-w-6xl">
+          <SectionHeading />
+          <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {USER_DISCIPLINES.map((d) => (
+              <div
+                key={d.name}
+                className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm"
+              >
+                <span
+                  className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-full"
+                  style={{
+                    background: `radial-gradient(circle at 30% 30%, ${d.color}, ${d.color}22)`,
+                    boxShadow: `0 0 24px -4px ${d.color}88`,
+                  }}
+                  aria-hidden
+                />
+                <h3 className="font-display text-lg font-semibold text-white">{d.label}</h3>
+                <p className="mt-1 text-sm text-white/60">{d.description}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
     );
@@ -75,7 +81,7 @@ export default function OrbitalUniverses() {
     <section
       id="universes"
       ref={sectionRef}
-      className="relative h-[440vh] scroll-mt-20 lg:scroll-mt-24"
+      className="relative h-[440vh] scroll-mt-20 bg-navy lg:scroll-mt-24"
     >
       <div className="sticky top-0 flex h-screen flex-col items-center justify-center gap-9 overflow-hidden lg:gap-12">
         {/* active-tinted ambient glow */}
@@ -92,11 +98,14 @@ export default function OrbitalUniverses() {
           <SectionHeading />
         </div>
 
-        {/* orbit stage */}
-        <div className="relative z-10 aspect-square w-[min(86vw,540px)]">
+        {/* orbit stage + tracks panel — the side-by-side split is web-view
+            only (lg+); on mobile the tracks panel is hidden and the orbit
+            stays centered exactly as before. */}
+        <div className="relative z-10 mx-auto grid w-full max-w-6xl items-center gap-10 px-6 lg:grid-cols-2 lg:gap-8 lg:px-14">
+        <div className="relative mx-auto aspect-square w-[min(86vw,460px)] lg:w-[min(34vw,420px)]">
           {/* orbit guide ring */}
           <div
-            className="absolute inset-[6%] rounded-full border border-emerald-glow/15"
+            className="absolute inset-[6%] rounded-full border border-white/15"
             aria-hidden
           />
 
@@ -172,12 +181,49 @@ export default function OrbitalUniverses() {
                 >
                   {activeDisc.label}
                 </div>
-                <div className="mt-1 text-[13px] leading-snug text-muted-foreground lg:text-sm">
+                <div className="mt-1 text-[13px] leading-snug text-white/60 lg:text-sm">
                   {activeDisc.description}
                 </div>
               </motion.div>
             </div>
           </div>
+        </div>
+
+        {/* tracks panel — web view only */}
+        <div className="hidden lg:flex lg:flex-col lg:items-start lg:justify-center">
+          <motion.div
+            key={activeDisc.name}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+            className="w-full max-w-sm rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm"
+          >
+            <div className="flex items-center gap-2.5">
+              <span
+                className="h-2.5 w-2.5 shrink-0 rounded-full"
+                style={{ background: activeDisc.color, boxShadow: `0 0 10px -1px ${activeDisc.color}` }}
+                aria-hidden
+              />
+              <span
+                className="font-mono text-[11px] font-semibold uppercase tracking-[0.2em]"
+                style={{ color: activeDisc.color }}
+              >
+                {activeDisc.label} tracks
+              </span>
+            </div>
+            <ul className="mt-4 space-y-2.5">
+              {tracksForUniverse(activeDisc.name).map((track) => (
+                <li
+                  key={track}
+                  className="flex items-center gap-2.5 text-[15px] text-white/85"
+                >
+                  <span className="h-1 w-1 shrink-0 rounded-full bg-white/40" aria-hidden />
+                  {track}
+                </li>
+              ))}
+            </ul>
+          </motion.div>
+        </div>
         </div>
 
         {/* progress rail + caption, kept close together as one group */}
@@ -189,14 +235,14 @@ export default function OrbitalUniverses() {
                 className="h-1.5 rounded-full transition-all duration-300"
                 style={{
                   width: i === active ? 26 : 8,
-                  background: i === active ? d.color : 'hsl(var(--muted-foreground) / 0.35)',
+                  background: i === active ? d.color : 'rgba(255,255,255,0.25)',
                 }}
                 aria-hidden
               />
             ))}
           </div>
 
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground/70">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-white/40">
             Scroll to explore
           </p>
         </div>
@@ -208,11 +254,19 @@ export default function OrbitalUniverses() {
 function SectionHeading() {
   return (
     <>
-      <p className="font-mono text-xs font-semibold uppercase tracking-[0.25em] text-emerald-mint">
+      <p className="font-mono text-xs font-semibold uppercase tracking-[0.25em] text-emerald-300">
         The six universes
       </p>
-      <h2 className="mt-3 max-w-3xl font-hero text-3xl font-bold leading-tight tracking-tight sm:text-4xl lg:text-5xl">
-        <span className="text-gradient-emerald">Six universes</span> to explore...
+      <h2 className="mt-3 max-w-3xl font-hero text-3xl font-bold leading-tight tracking-tight text-white sm:text-4xl lg:text-5xl">
+        <span
+          className="bg-clip-text text-transparent"
+          style={{
+            backgroundImage: 'linear-gradient(100deg, #d1fae5 5%, #6ee7b7 45%, #22c55e 95%)',
+          }}
+        >
+          Six universes
+        </span>{' '}
+        to explore...
       </h2>
     </>
   );
