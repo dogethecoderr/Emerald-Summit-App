@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import LandingNav from '../components/LandingNav';
 import MountainSkyline from '../components/MountainSkyline';
+import PhotoMosaic from '../components/PhotoMosaic';
 import SummitLogo from '../components/SummitLogo';
 import FaqSection from '../components/FaqSection';
 import CtaBand from '../components/CtaBand';
@@ -265,25 +266,32 @@ export default function WelcomePage() {
                   Explore the app
                 </Button>
               </div>
+
+              <div className="mt-8 grid grid-cols-2 gap-4">
+                {ABOUT_STATS.map((s) => (
+                  <div
+                    key={s.label}
+                    className="glass rounded-2xl p-6 text-center"
+                    style={{ borderColor: 'rgba(30, 58, 107, 0.28)' }}
+                  >
+                    <div className="font-hero text-3xl font-bold text-gradient-emerald lg:text-4xl">
+                      {s.value}
+                    </div>
+                    <div className="mt-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      {s.label}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </motion.div>
 
             <motion.div
-              className="grid grid-cols-2 gap-4"
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-80px' }}
               transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
             >
-              {ABOUT_STATS.map((s) => (
-                <div key={s.label} className="glass rounded-2xl p-6 text-center">
-                  <div className="font-hero text-3xl font-bold text-gradient-emerald lg:text-4xl">
-                    {s.value}
-                  </div>
-                  <div className="mt-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    {s.label}
-                  </div>
-                </div>
-              ))}
+              <PhotoMosaic />
             </motion.div>
           </div>
 
