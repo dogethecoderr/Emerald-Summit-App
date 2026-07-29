@@ -108,7 +108,7 @@ export default function WelcomePage() {
                 className="mt-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-semibold text-emerald-200 backdrop-blur-sm lg:px-5 lg:py-2 lg:text-sm"
               >
                 <Sparkles className="h-3.5 w-3.5" />
-                Summit ’27 · The Tri-Valley’s largest student-run STEAM summit
+                Summit ’27 · The Tri-Valley’s largest student-run STEAM conference
               </motion.div>
 
               <h1 className="mt-7 font-title text-6xl font-bold leading-[0.98] tracking-tight text-white sm:text-7xl md:text-8xl xl:text-9xl">
@@ -245,7 +245,7 @@ export default function WelcomePage() {
                 Emerald Summit is the Tri-Valley’s largest student-run STEAM
                 conference — a full day where hundreds of builders move between six
                 disciplines (universes), pitch to visiting experts, and leave
-                with something better than what they started with.
+                with something better than they started with.
               </p>
               
               <div className="mt-8 flex flex-wrap gap-3">
