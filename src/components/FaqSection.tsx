@@ -85,7 +85,7 @@ export default function FaqSection() {
       <p className="font-mono text-xs font-semibold uppercase tracking-[0.25em] text-emerald-mint">
         Questions
       </p>
-      <h2 className="mt-3 font-hero text-3xl font-bold leading-tight tracking-tight sm:text-4xl lg:text-5xl">
+      <h2 className="mt-3 font-hero text-3xl font-bold leading-tight tracking-tight text-navy-bright sm:text-4xl lg:text-5xl">
         Frequently asked <span className="text-gradient-emerald">questions</span>
       </h2>
 
