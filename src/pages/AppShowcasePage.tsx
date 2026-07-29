@@ -144,7 +144,7 @@ export default function AppShowcasePage() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
-            className="mt-6 max-w-3xl font-hero text-4xl font-bold leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl"
+            className="mt-6 max-w-3xl font-hero text-4xl font-bold leading-[1.08] tracking-tight text-navy-bright sm:text-5xl lg:text-6xl"
           >
             Everything for summit day,
             <br />
@@ -292,9 +292,9 @@ export default function AppShowcasePage() {
             <ArrowRight className="ml-1.5 h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Button>
         </motion.section>
-
-        <LandingFooter />
       </div>
+
+      <LandingFooter />
     </div>
   );
 }
