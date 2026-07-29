@@ -55,6 +55,13 @@ module.exports = {
           mint: '#0A5F43',
           glow: '#0C7A55',
         },
+        // Dark navy accent — footer/section bg stays DEFAULT (very dark);
+        // `navy-bright` is a more visibly-blue shade for headline text on
+        // white backgrounds, where the DEFAULT reads too close to black.
+        navy: {
+          DEFAULT: '#101c36',
+          bright: '#1e3a6b',
+        },
       },
       borderRadius: {
         lg: 'var(--radius)',
