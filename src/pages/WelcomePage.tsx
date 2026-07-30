@@ -112,7 +112,7 @@ export default function WelcomePage() {
                 Summit ’27 · The Tri-Valley’s largest student-led STEAM conference
               </motion.div>
 
-              <h1 className="mt-7 font-title text-6xl font-medium leading-[0.98] tracking-tight text-white sm:text-7xl md:text-8xl xl:text-9xl">
+              <h1 className="mt-7 font-title text-6xl font-normal leading-[0.98] tracking-tight text-white sm:text-7xl md:text-8xl xl:text-9xl">
                 <span className="block overflow-hidden pb-[0.06em]">
                   <motion.span className="block" variants={lineReveal}>
                     Emerald
