@@ -9,8 +9,8 @@ module.exports = {
         display: ['"Satoshi"', 'system-ui', 'sans-serif'],
         // Landing-page display + label faces (scoped, not global headings)
         hero: ['"Satoshi"', 'system-ui', 'sans-serif'],
-        // Hero title only — Fraunces
-        title: ['"Fraunces"', 'Georgia', 'serif'],
+        // Hero title only — Orbitron
+        title: ['"Orbitron"', 'system-ui', 'sans-serif'],
         mono: ['"Spline Sans Mono"', 'ui-monospace', 'monospace'],
       },
       colors: {
