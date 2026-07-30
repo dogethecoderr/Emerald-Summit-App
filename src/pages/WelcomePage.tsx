@@ -8,7 +8,7 @@ import {
   MapPin,
   Sparkles,
 } from 'lucide-react';
-import HyperspaceIntro, { shouldPlayIntro } from '../components/HyperspaceIntro';
+import { markIntroPlayed, shouldPlayIntro } from '../components/introSession';
 import LandingNav from '../components/LandingNav';
 import MountainSkyline from '../components/MountainSkyline';
 import PhotoMosaic from '../components/PhotoMosaic';
@@ -57,6 +57,19 @@ const rise: Variants = {
   },
 };
 
+/**
+ * Shared scroll-in for the sections below the hero. Trips as soon as a slice
+ * of the block is on screen (rather than 80px past the edge), travels a
+ * shorter distance over longer, and rides a gentle curve instead of the
+ * hero's snappy expo — so things ease in as you scroll rather than popping.
+ */
+const scrollIn = {
+  initial: { opacity: 0, y: 16 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, amount: 0.15 },
+  transition: { duration: 0.95, ease: [0.22, 0.61, 0.36, 1] },
+} as const;
+
 /** Masked line that slides up from behind its clip. */
 const lineReveal: Variants = {
   hidden: { y: '110%' },
@@ -90,21 +103,34 @@ function glintLayers(base: string, band: string) {
   };
 }
 
-/** Beat between the jump ending and the hero copy starting to arrive. */
-const AFTER_INTRO_DELAY = 0.7;
+/**
+ * The sky cues us the moment the sun is down, so the copy arrives *with* the
+ * returning stars rather than after them — only a short beat is needed here.
+ */
+const AFTER_INTRO_DELAY = 0.25;
 /** Nav drops in just behind the copy, then scrolling is handed back. */
-const NAV_DELAY = 1.35;
-const UNLOCK_MS = 2400;
+const NAV_DELAY = 1.2;
+const UNLOCK_MS = 2200;
 
 export default function WelcomePage() {
   const navigate = useNavigate();
   const location = useLocation();
   const reduceMotion = useReducedMotion();
 
-  // When the jump plays, the page holds still and stays hidden until it ends.
+  // When the sequence plays, the page holds still and the copy waits for it.
   const [playingIntro] = useState(shouldPlayIntro);
   const [revealed, setRevealed] = useState(() => !shouldPlayIntro());
   const [locked, setLocked] = useState(playingIntro);
+  const [skipped, setSkipped] = useState(false);
+
+  useEffect(() => {
+    if (playingIntro) markIntroPlayed();
+  }, [playingIntro]);
+
+  const skipIntro = () => {
+    setSkipped(true);
+    setRevealed(true);
+  };
 
   // Hold the scroll position until the whole reveal has landed. The document
   // scroller here is <html>, so locking <body> alone would do nothing.
@@ -153,16 +179,37 @@ export default function WelcomePage() {
 
   return (
     <div className="relative min-h-screen overflow-clip">
-      <HyperspaceIntro onDone={() => setRevealed(true)} />
       <LandingNav
         overlay
         entered={playingIntro ? revealed : undefined}
         entranceDelay={NAV_DELAY}
       />
 
+      {/* Stays for the whole sequence — halo behind it so it reads against
+          both the black void and the lit sun. */}
+      {playingIntro && !revealed && (
+        <div className="fixed bottom-9 left-1/2 z-[110] -translate-x-1/2">
+          <div
+            className="pointer-events-none absolute -inset-4 rounded-full bg-black/60 blur-xl"
+            aria-hidden
+          />
+          <button
+            type="button"
+            onClick={skipIntro}
+            className="relative rounded-full border border-white/60 bg-white/10 px-6 py-2.5 text-[11px] font-semibold uppercase tracking-[0.28em] text-white backdrop-blur-md transition hover:border-white hover:bg-white/25"
+          >
+            Skip
+          </button>
+        </div>
+      )}
+
       {/* dark night-sky hero band — fills the full viewport so nothing below peeks in on load */}
       <div className="relative min-h-screen overflow-hidden">
-        <MountainSkyline />
+        <MountainSkyline
+          playIntro={playingIntro}
+          skip={skipped}
+          onCueContent={() => setRevealed(true)}
+        />
 
         <div className="relative z-10 flex min-h-screen flex-col">
           <div className="relative mx-auto flex w-full max-w-[1440px] flex-1 flex-col px-6 lg:px-14">
@@ -296,8 +343,8 @@ export default function WelcomePage() {
                   }
                   className="mt-12 flex flex-col items-center gap-1 text-white/40 transition-colors hover:text-emerald-200"
                   initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 1.2, duration: 0.8 }}
+                  animate={{ opacity: revealed ? 1 : 0 }}
+                  transition={{ delay: revealed ? 1.2 : 0, duration: 0.8 }}
                 >
                   <span className="font-mono text-[10px] uppercase tracking-[0.25em]">
                     Scroll
@@ -323,10 +370,7 @@ export default function WelcomePage() {
         >
           <div className="grid gap-12 lg:grid-cols-[1fr_1.05fr] lg:items-center lg:gap-16 xl:gap-24">
             <motion.div
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-80px' }}
-              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              {...scrollIn}
             >
               <p className="font-mono text-xs font-semibold uppercase tracking-[0.25em] text-emerald-mint">
                 About the summit
@@ -381,10 +425,8 @@ export default function WelcomePage() {
             </motion.div>
 
             <motion.div
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-80px' }}
-              transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+              {...scrollIn}
+              transition={{ ...scrollIn.transition, delay: 0.12 }}
             >
               <PhotoMosaic />
             </motion.div>
@@ -393,10 +435,8 @@ export default function WelcomePage() {
           {/* when & where */}
           <motion.div
             className="mt-6 glass rounded-2xl p-6"
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-80px' }}
-            transition={{ duration: 0.6, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+            {...scrollIn}
+            transition={{ ...scrollIn.transition, delay: 0.24 }}
           >
             <h3 className="font-hero text-lg font-semibold">When &amp; where</h3>
             <ul className="mt-3 flex flex-wrap gap-x-8 gap-y-2 text-sm text-muted-foreground">
