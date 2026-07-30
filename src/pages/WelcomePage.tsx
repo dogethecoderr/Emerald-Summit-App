@@ -92,7 +92,7 @@ export default function WelcomePage() {
         <div className="relative z-10 flex min-h-screen flex-col">
           <div className="relative mx-auto flex w-full max-w-[1440px] flex-1 flex-col px-6 lg:px-14">
             <motion.section
-              className="flex flex-1 flex-col items-center justify-center pb-16 pt-14 text-center lg:pb-24 lg:pt-16"
+              className="flex flex-1 flex-col items-center justify-center pb-20 pt-20 text-center lg:pb-28 lg:pt-24"
               variants={stagger}
               initial="hidden"
               animate="show"
@@ -112,7 +112,7 @@ export default function WelcomePage() {
                 Summit ’27 · The Tri-Valley’s largest student-led STEAM conference
               </motion.div>
 
-              <h1 className="mt-7 font-title text-6xl font-bold leading-[0.98] tracking-tight text-white sm:text-7xl md:text-8xl xl:text-9xl">
+              <h1 className="mt-7 font-title text-6xl font-medium leading-[0.98] tracking-tight text-white sm:text-7xl md:text-8xl xl:text-9xl">
                 <span className="block overflow-hidden pb-[0.06em]">
                   <motion.span className="block" variants={lineReveal}>
                     Emerald
@@ -153,7 +153,7 @@ export default function WelcomePage() {
               >
                 <Button
                   size="lg"
-                  className="group h-12 rounded-full bg-emerald-400 px-8 text-[15px] font-semibold text-emerald-950 shadow-[0_0_40px_-8px_rgba(52,211,153,0.6)] hover:bg-emerald-300 lg:h-14 lg:px-12 lg:text-lg"
+                  className="group h-12 rounded-full bg-emerald-400 px-8 text-[15px] font-semibold text-emerald-950 shadow-[0_0_40px_-8px_rgba(52,211,153,0.6)] transition-all duration-200 hover:scale-[1.04] hover:bg-emerald-300 hover:shadow-[0_0_56px_-8px_rgba(52,211,153,0.8)] active:scale-[0.98] lg:h-14 lg:px-12 lg:text-lg"
                   onClick={() => navigate('/home')}
                 >
                   Get started
@@ -162,7 +162,7 @@ export default function WelcomePage() {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="h-12 rounded-full border-white/25 bg-white/5 px-8 text-[15px] font-semibold text-white backdrop-blur-sm hover:bg-white/10 lg:h-14 lg:px-12 lg:text-lg"
+                  className="h-12 rounded-full border-white/25 bg-white/5 px-8 text-[15px] font-semibold text-white backdrop-blur-sm transition-all duration-200 hover:scale-[1.03] hover:bg-white/10 active:scale-[0.98] lg:h-14 lg:px-12 lg:text-lg"
                   onClick={() => navigate('/app')}
                 >
                   Explore the app
