@@ -89,6 +89,12 @@ module.exports = {
           '0%, 100%': { transform: 'translateY(0px)' },
           '50%': { transform: 'translateY(-12px)' },
         },
+        // Light catching a cut stone: the highlight rests off the letters for
+        // most of the cycle, then sweeps across once, left to right.
+        'glint': {
+          '0%, 80%': { backgroundPosition: '100%' },
+          '100%': { backgroundPosition: '0%' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -96,6 +102,7 @@ module.exports = {
         'fade-up': 'fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both',
         'fade-in': 'fade-in 0.4s ease both',
         drift: 'drift 7s ease-in-out infinite',
+        glint: 'glint 4.5s linear infinite',
       },
     },
   },

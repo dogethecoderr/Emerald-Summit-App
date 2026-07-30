@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
 import BrandMark from './BrandMark';
 import { Button } from '@/components/ui/button';
@@ -11,16 +12,48 @@ const SECTION_LINKS = [
   { id: 'faq', label: 'FAQ' },
 ];
 
+interface LandingNavProps {
+  /**
+   * Float above the page instead of taking layout space, so the hero's night
+   * sky runs behind the bar rather than the light page background showing
+   * through it.
+   */
+  overlay?: boolean;
+  /**
+   * Drives the slide-down entrance. Leave undefined for no entrance at all
+   * (the bar is simply there); pass `false` to park it above the viewport and
+   * `true` to drop it in. Timed off the caller's reveal, not off mount.
+   */
+  entered?: boolean;
+  /** Seconds to hold after `entered` flips before the bar drops. */
+  entranceDelay?: number;
+}
+
 /**
  * Sticky marketing navbar shared by the landing page and the /app showcase.
  * "About"/"Universes" are anchors on "/" — when triggered from elsewhere
  * they route home and pass the target id via nav state, which WelcomePage
  * picks up on mount to finish the scroll.
  */
-export default function LandingNav() {
+export default function LandingNav({
+  overlay = false,
+  entered,
+  entranceDelay = 0,
+}: LandingNavProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const [open, setOpen] = useState(false);
+  // Solid while parked at the top; only once the page moves does the bar go
+  // translucent and let content blur past underneath it.
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    if (!overlay) return;
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [overlay]);
 
   const goToSection = (id: string) => {
     setOpen(false);
@@ -34,7 +67,25 @@ export default function LandingNav() {
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0d2a1e]/85 backdrop-blur-xl">
+    <motion.header
+      className={cn(
+        'z-40 border-b transition-colors duration-300',
+        overlay ? 'fixed inset-x-0 top-0' : 'sticky top-0',
+        // `#30493e` is the exact colour the old translucent bar composited to
+        // over the light page background, so parked-at-top looks unchanged —
+        // just now with stars behind it instead of white.
+        overlay && !scrolled
+          ? 'border-white/5 bg-[#30493e]/95'
+          : 'border-white/10 bg-[#0d2a1e]/85 backdrop-blur-xl',
+      )}
+      initial={entered === undefined ? false : { y: '-105%' }}
+      animate={{ y: entered === false ? '-105%' : 0 }}
+      transition={{
+        duration: 0.5,
+        delay: entered ? entranceDelay : 0,
+        ease: [0.16, 1, 0.3, 1],
+      }}
+    >
       <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between px-6 lg:h-20 lg:px-14">
         <BrandMark
           logoClassName="h-8 w-8 lg:h-10 lg:w-10"
@@ -119,6 +170,6 @@ export default function LandingNav() {
           </div>
         </div>
       )}
-    </header>
+    </motion.header>
   );
 }

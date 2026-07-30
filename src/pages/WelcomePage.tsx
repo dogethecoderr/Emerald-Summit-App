@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, useReducedMotion, type Variants } from 'framer-motion';
 import {
@@ -8,6 +8,7 @@ import {
   MapPin,
   Sparkles,
 } from 'lucide-react';
+import HyperspaceIntro, { shouldPlayIntro } from '../components/HyperspaceIntro';
 import LandingNav from '../components/LandingNav';
 import MountainSkyline from '../components/MountainSkyline';
 import PhotoMosaic from '../components/PhotoMosaic';
@@ -34,12 +35,16 @@ const ABOUT_STATS = [
 
 
 
-/** Container that cascades its children in on mount. */
+/**
+ * Container that cascades its children in. `custom` is the beat to hold
+ * before the first child moves — long enough after the jump for the night
+ * sky to stand alone for a moment, short on an ordinary load.
+ */
 const stagger: Variants = {
   hidden: {},
-  show: {
-    transition: { staggerChildren: 0.09, delayChildren: 0.15 },
-  },
+  show: (delayChildren: number) => ({
+    transition: { staggerChildren: 0.09, delayChildren },
+  }),
 };
 
 /** Soft rise used for most hero elements. */
@@ -61,10 +66,75 @@ const lineReveal: Variants = {
   },
 };
 
+/** Barely-there emerald wash under the "Emerald" line — still reads white. */
+const EMERALD_GRADIENT =
+  'linear-gradient(100deg, #ffffff 5%, #f2fdf8 45%, #d1fae5 95%)';
+/** Emerald run under the "Summit" line. */
+const SUMMIT_GRADIENT =
+  'linear-gradient(100deg, #d1fae5 5%, #6ee7b7 45%, #22c55e 95%)';
+
+/** Highlight colours for the sweep — pale emerald up top, white below. */
+const GLINT_EMERALD = 'rgba(167, 243, 208, 0.95)';
+const GLINT_WHITE = 'rgba(255, 255, 255, 0.92)';
+/**
+ * Hold before the lower line picks the sweep up, so one highlight appears to
+ * travel from the "E" of Emerald through to the "t" of Summit.
+ */
+const GLINT_HANDOFF = '0.7s';
+
+/** Narrow highlight band riding above the line's own gradient. */
+function glintLayers(base: string, band: string) {
+  return {
+    backgroundImage: `linear-gradient(100deg, transparent 47%, ${band} 50%, transparent 53%), ${base}`,
+    backgroundSize: '300% 100%, 100% 100%',
+  };
+}
+
+/** Beat between the jump ending and the hero copy starting to arrive. */
+const AFTER_INTRO_DELAY = 0.7;
+/** Nav drops in just behind the copy, then scrolling is handed back. */
+const NAV_DELAY = 1.35;
+const UNLOCK_MS = 2400;
+
 export default function WelcomePage() {
   const navigate = useNavigate();
   const location = useLocation();
   const reduceMotion = useReducedMotion();
+
+  // When the jump plays, the page holds still and stays hidden until it ends.
+  const [playingIntro] = useState(shouldPlayIntro);
+  const [revealed, setRevealed] = useState(() => !shouldPlayIntro());
+  const [locked, setLocked] = useState(playingIntro);
+
+  // Hold the scroll position until the whole reveal has landed. The document
+  // scroller here is <html>, so locking <body> alone would do nothing.
+  useEffect(() => {
+    if (!locked) return;
+    const html = document.documentElement;
+    const { body } = document;
+    const prevHtml = html.style.overflow;
+    const prevBody = body.style.overflow;
+    const prevBehavior = html.style.scrollBehavior;
+
+    // Snap to the top rather than smooth-scrolling there (the stylesheet sets
+    // `scroll-behavior: smooth`, which would animate this).
+    html.style.scrollBehavior = 'auto';
+    window.scrollTo(0, 0);
+    html.style.overflow = 'hidden';
+    body.style.overflow = 'hidden';
+    html.style.scrollBehavior = prevBehavior;
+
+    return () => {
+      html.style.overflow = prevHtml;
+      body.style.overflow = prevBody;
+    };
+  }, [locked]);
+
+  useEffect(() => {
+    if (!revealed || !playingIntro) return;
+    const id = setTimeout(() => setLocked(false), UNLOCK_MS);
+    return () => clearTimeout(id);
+  }, [revealed, playingIntro]);
 
   // Cross-route anchor nav: LandingNav sends { scrollTo: id } when the link
   // is clicked from a different route; finish the scroll once we've landed.
@@ -83,7 +153,12 @@ export default function WelcomePage() {
 
   return (
     <div className="relative min-h-screen overflow-clip">
-      <LandingNav />
+      <HyperspaceIntro onDone={() => setRevealed(true)} />
+      <LandingNav
+        overlay
+        entered={playingIntro ? revealed : undefined}
+        entranceDelay={NAV_DELAY}
+      />
 
       {/* dark night-sky hero band — fills the full viewport so nothing below peeks in on load */}
       <div className="relative min-h-screen overflow-hidden">
@@ -95,7 +170,8 @@ export default function WelcomePage() {
               className="flex flex-1 flex-col items-center justify-center pb-20 pt-20 text-center lg:pb-28 lg:pt-24"
               variants={stagger}
               initial="hidden"
-              animate="show"
+              animate={revealed ? 'show' : 'hidden'}
+              custom={playingIntro ? AFTER_INTRO_DELAY : 0.15}
             >
               <motion.div
                 variants={rise}
@@ -114,17 +190,33 @@ export default function WelcomePage() {
 
               <h1 className="mt-7 font-title text-6xl font-normal leading-[0.98] tracking-tight text-white sm:text-7xl md:text-8xl xl:text-9xl">
                 <span className="block overflow-hidden pb-[0.06em]">
-                  <motion.span className="block" variants={lineReveal}>
+                  <motion.span
+                    className={`block bg-clip-text text-transparent ${
+                      reduceMotion ? '' : 'animate-glint'
+                    }`}
+                    style={
+                      reduceMotion
+                        ? { backgroundImage: EMERALD_GRADIENT }
+                        : glintLayers(EMERALD_GRADIENT, GLINT_EMERALD)
+                    }
+                    variants={lineReveal}
+                  >
                     Emerald
                   </motion.span>
                 </span>
                 <span className="mt-1 block overflow-hidden pb-[0.06em] sm:mt-2">
                   <motion.span
-                    className="block bg-clip-text text-transparent"
-                    style={{
-                      backgroundImage:
-                        'linear-gradient(100deg, #d1fae5 5%, #6ee7b7 45%, #22c55e 95%)',
-                    }}
+                    className={`block bg-clip-text text-transparent ${
+                      reduceMotion ? '' : 'animate-glint'
+                    }`}
+                    style={
+                      reduceMotion
+                        ? { backgroundImage: SUMMIT_GRADIENT }
+                        : {
+                            ...glintLayers(SUMMIT_GRADIENT, GLINT_WHITE),
+                            animationDelay: GLINT_HANDOFF,
+                          }
+                    }
                     variants={lineReveal}
                   >
                     Summit
