@@ -409,6 +409,10 @@ export default function MountainSkyline({
       for (let i = 0; i < 3; i++) {
         const el = ridgeRefs.current[i];
         if (!el) continue;
+        // The translateY travel alone isn't guaranteed to clear a peak off
+        // the bottom of every viewport height — tying opacity to the same
+        // ease is what actually keeps the range out of frame at t=0.
+        el.style.opacity = `${eases[i]}`;
         el.style.transform = `translate(${drifts[i]}px, ${
           (1 - eases[i]) * travel[i]
         }vh)`;
@@ -484,6 +488,7 @@ export default function MountainSkyline({
             ridgeRefs.current[i] = el;
           }}
           className={`absolute inset-x-0 bottom-0 w-full ${ridge.heightClass}`}
+          style={{ opacity: 0 }}
           viewBox={`0 0 ${RIDGE_WIDTH} ${ridge.height}`}
           preserveAspectRatio="none"
         >
