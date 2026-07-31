@@ -5,15 +5,15 @@ const TAU = Math.PI * 2;
 const STAR_COUNT = 900;
 
 /* Timeline, in seconds. Each mark is where that beat *finishes*. */
-const T_WARP = 3.4; // hyperspace at full tilt
-const T_SETTLE = 6.0; // slowing; stars fall back, sun resolves, ridges rise
-const T_PULSE = 10.2; // sun radiates and shrinks, three decaying beats
-const T_SET = 13.0; // sun dims and drops behind the range — hero copy starts
-const T_END = 14.8; // stars finished flickering back in
+const T_WARP = 5.0; // hyperspace at full tilt
+const T_SETTLE = 7.6; // slowing; stars fall back, sun resolves, ridges rise
+const T_PULSE = 11.8; // sun radiates and shrinks, three decaying beats
+const T_SET = 14.6; // sun dims and drops behind the range — hero copy starts
+const T_END = 16.4; // stars finished flickering back in
 
-/** Where in the pulse window each beat crests, and how long its ring lives. */
+/** Where in the pulse window each beat crests, and how wide each swell is. */
 const BEATS = [0.0833, 0.4167, 0.75];
-const RING_LIFE = 2.9;
+const BEAT_WIDTH = 0.62;
 
 /**
  * Where each range's snow band sits, as a fraction of its own box. Tuned to
@@ -30,6 +30,26 @@ const ALPHA_STEPS = 14;
 const WIDTH_STEPS = 4;
 const WIDTH_MIN = 0.8;
 const WIDTH_MAX = 3.8;
+
+/**
+ * Deep green rock, kept well below the sky in value so the range still reads
+ * as a dark mass and the sun stays the brightest thing on screen. Lit faces
+ * carry more of the emerald; shadowed ones fall almost to black.
+ */
+const FACET_DARK = ['#13251c', '#0d1a14', '#050c09'];
+const FACET_LIT = ['#3d6a55', '#2d5140', '#1d3729'];
+
+/** Blend two hex colours — used once at render to shade the slope faces. */
+function mixHex(a: string, b: string, t: number): string {
+  const pa = parseInt(a.slice(1), 16);
+  const pb = parseInt(b.slice(1), 16);
+  const r = Math.round((pa >> 16) + (((pb >> 16) - (pa >> 16)) * t));
+  const g = Math.round(
+    ((pa >> 8) & 255) + ((((pb >> 8) & 255) - ((pa >> 8) & 255)) * t),
+  );
+  const bl = Math.round((pa & 255) + (((pb & 255) - (pa & 255)) * t));
+  return `rgb(${r}, ${g}, ${bl})`;
+}
 
 const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -143,7 +163,7 @@ export default function MountainSkyline({
     ctx.lineCap = 'round';
     let raf = 0;
 
-    /** Disc, corona, rays and the rings each beat throws off. */
+    /** Disc, corona, bloom and the spokes of light each beat drives. */
     const drawSun = (
       cx: number,
       cy: number,
@@ -157,8 +177,10 @@ export default function MountainSkyline({
       ctx.save();
       ctx.globalCompositeOperation = 'lighter';
 
-      // Corona: the wide, soft halo the disc sits inside.
-      const corona = ctx.createRadialGradient(cx, cy, r * 0.55, cx, cy, r * 3.4);
+      // Corona: the wide, soft halo the disc sits inside. Started from zero
+      // radius — an inner radius leaves a flat plateau whose edge shows as a
+      // seam once the additive layers stack up.
+      const corona = ctx.createRadialGradient(cx, cy, 0, cx, cy, r * 3.4);
       corona.addColorStop(0, `rgba(120, 245, 200, ${0.34 * alpha})`);
       corona.addColorStop(0.32, `rgba(52, 211, 153, ${0.16 * alpha})`);
       corona.addColorStop(0.68, `rgba(16, 150, 105, ${0.05 * alpha})`);
@@ -168,18 +190,38 @@ export default function MountainSkyline({
       ctx.arc(cx, cy, r * 3.4, 0, TAU);
       ctx.fill();
 
-      // Radiation: spokes of light, longer and brighter on each beat.
-      const spokes = 72;
+      // Emerald bloom the flare throws across the sky, so the light feels
+      // like it's coming off the sun rather than sitting behind it.
+      const bloomR = r * (5.2 + energy * 2.6);
+      const bloom = ctx.createRadialGradient(cx, cy, 0, cx, cy, bloomR);
+      const bloomA = (0.10 + 0.30 * energy) * alpha;
+      bloom.addColorStop(0, `rgba(52, 211, 153, ${bloomA})`);
+      bloom.addColorStop(0.45, `rgba(20, 160, 110, ${bloomA * 0.42})`);
+      bloom.addColorStop(1, 'rgba(12, 122, 85, 0)');
+      ctx.fillStyle = bloom;
+      ctx.beginPath();
+      ctx.arc(cx, cy, bloomR, 0, TAU);
+      ctx.fill();
+
+      // Radiation: spokes of light that ease out of the limb and taper away.
+      const spokes = 108;
       ctx.lineCap = 'butt';
       for (let i = 0; i < spokes; i++) {
-        const a = (i / spokes) * TAU + t * 0.06;
-        // Two incommensurate waves so no spoke pattern repeats visibly.
-        const n =
-          0.5 + 0.28 * Math.sin(i * 2.399 + t * 1.1) + 0.22 * Math.sin(i * 1.17 - t * 0.7);
-        const inner = r * 1.02;
-        const outer = r * (1.12 + (0.5 + 1.15 * energy) * n);
-        const fade = (0.06 + 0.44 * energy) * n * alpha;
-        if (fade <= 0.004) continue;
+        const a = (i / spokes) * TAU + t * 0.045;
+        // Several incommensurate waves so the fringe undulates smoothly and
+        // never falls into a visible repeating pattern.
+        const n = clamp01(
+          0.5 +
+            0.24 * Math.sin(i * 0.7 + t * 0.9) +
+            0.16 * Math.sin(i * 1.9 - t * 0.6) +
+            0.12 * Math.sin(i * 3.3 + t * 1.4),
+        );
+        // Smoothstep the reach so spokes grow and retract, never snap.
+        const reach = smooth(n) * (0.55 + 1.35 * energy);
+        const inner = r * 1.03;
+        const outer = r * (1.12 + reach);
+        const fade = (0.05 + 0.40 * energy) * smooth(n) * alpha;
+        if (fade <= 0.003) continue;
 
         const cos = Math.cos(a);
         const sin = Math.sin(a);
@@ -189,10 +231,12 @@ export default function MountainSkyline({
           cx + cos * outer,
           cy + sin * outer,
         );
-        grad.addColorStop(0, `rgba(190, 255, 226, ${fade})`);
-        grad.addColorStop(1, 'rgba(52, 211, 153, 0)');
+        // Three stops so the taper is gradual rather than a hard ramp.
+        grad.addColorStop(0, `rgba(214, 255, 236, ${fade})`);
+        grad.addColorStop(0.42, `rgba(110, 231, 183, ${fade * 0.5})`);
+        grad.addColorStop(1, 'rgba(34, 197, 94, 0)');
         ctx.strokeStyle = grad;
-        ctx.lineWidth = r * (0.035 + 0.05 * n);
+        ctx.lineWidth = r * (0.02 + 0.045 * n);
         ctx.beginPath();
         ctx.moveTo(cx + cos * inner, cy + sin * inner);
         ctx.lineTo(cx + cos * outer, cy + sin * outer);
@@ -200,39 +244,29 @@ export default function MountainSkyline({
       }
       ctx.lineCap = 'round';
 
-      // Shockwave rings — the radiation mark each beat leaves behind.
-      for (const b of beatTimes) {
-        const age = t - b;
-        if (age < 0 || age > RING_LIFE) continue;
-        const k = age / RING_LIFE;
-        const ringR = r * (1.0 + easeOut(k) * 2.6);
-        const ringA = Math.pow(1 - k, 1.7) * 0.6 * alpha;
-        if (ringA <= 0.004) continue;
-        ctx.strokeStyle = `rgba(190, 255, 226, ${ringA})`;
-        ctx.lineWidth = Math.max(0.8, r * 0.07 * (1 - k));
-        ctx.beginPath();
-        ctx.arc(cx, cy, ringR, 0, TAU);
-        ctx.stroke();
-      }
-
-      ctx.restore();
-
+      // The disc, additive like everything else here — drawn normally its soft
+      // edge sits over the glow and darkens it into a ring.
       // The disc. A smooth ramp from centre to edge just reads as a shaded
       // ball, so the core is held flat and blown out to white and the drop to
       // the limb is quick — light too bright to look at, not a sphere.
-      const disc = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+      // Painted out past the limb so its falloff overlaps where the spokes
+      // begin; a gap between the two shows up as a dark ring.
+      const discR = r * 1.18;
+      const disc = ctx.createRadialGradient(cx, cy, 0, cx, cy, discR);
       disc.addColorStop(0, `rgba(255, 255, 255, ${alpha})`);
-      disc.addColorStop(0.34, `rgba(255, 255, 255, ${alpha})`);
-      disc.addColorStop(0.5, `rgba(226, 255, 243, ${alpha})`);
-      disc.addColorStop(0.68, `rgba(167, 243, 208, ${alpha})`);
-      disc.addColorStop(0.84, `rgba(52, 211, 153, ${alpha})`);
-      disc.addColorStop(0.95, `rgba(16, 185, 129, ${alpha})`);
-      disc.addColorStop(0.99, `rgba(6, 120, 85, ${0.85 * alpha})`);
-      disc.addColorStop(1, 'rgba(6, 120, 85, 0)');
+      disc.addColorStop(0.29, `rgba(255, 255, 255, ${alpha})`);
+      disc.addColorStop(0.42, `rgba(226, 255, 243, ${alpha})`);
+      disc.addColorStop(0.58, `rgba(167, 243, 208, ${alpha})`);
+      disc.addColorStop(0.72, `rgba(52, 211, 153, ${alpha})`);
+      disc.addColorStop(0.82, `rgba(45, 205, 145, ${0.6 * alpha})`);
+      disc.addColorStop(0.9, `rgba(52, 211, 153, ${0.28 * alpha})`);
+      disc.addColorStop(1, 'rgba(52, 211, 153, 0)');
       ctx.fillStyle = disc;
       ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, TAU);
+      ctx.arc(cx, cy, discR, 0, TAU);
       ctx.fill();
+
+      ctx.restore();
     };
 
     const draw = (now: number) => {
@@ -264,7 +298,7 @@ export default function MountainSkyline({
         ctx.clearRect(0, 0, w, h);
       }
 
-      const recede = smooth(span(t, T_WARP * 0.8, T_SETTLE));
+      const recede = smooth(span(t, T_WARP * 0.88, T_SETTLE));
       const back = smooth(span(t, T_SET - 0.4, T_END));
       const hole = maxDist * 0.08 * smooth(span(t, 0, T_SETTLE * 0.6));
 
@@ -326,15 +360,18 @@ export default function MountainSkyline({
       }
 
       /* ---- sun ---------------------------------------------------- */
-      const focus = smooth(span(t, T_WARP * 0.72, T_SETTLE));
+      const focus = smooth(span(t, T_WARP * 0.86, T_SETTLE));
       const setting = smooth(span(t, T_PULSE, T_SET));
 
-      // Three beats, each smaller than the last — a pulse settling.
+      // Three beats, each smaller than the last. Gaussian bumps rather than a
+      // rectified sine: a sine has a corner where it clips at zero, which the
+      // rays showed up as a snap.
       let beat = 0;
-      if (t > T_SETTLE) {
-        const p = span(t, T_SETTLE, T_PULSE);
-        beat = Math.max(0, Math.sin(p * TAU * 3)) * (1 - p);
+      for (let i = 0; i < beatTimes.length; i++) {
+        const d = (t - beatTimes[i]) / BEAT_WIDTH;
+        beat += Math.exp(-d * d) * (1 - i * 0.26);
       }
+      beat = clamp01(beat);
 
       const baseR = Math.min(w, h) * 0.15;
       const sunR = baseR * lerp(0.3, 1, easeOut(focus)) * (1 + beat * 0.16);
@@ -342,8 +379,11 @@ export default function MountainSkyline({
       const sunA = focus * (1 - setting * 0.92);
       drawSun(cx, sunY, sunR, sunA, beat, t);
 
+      // Sky washes deeper emerald as the flare swells.
       const wash = washRef.current;
-      if (wash) wash.style.opacity = `${focus * (1 - setting) * 0.8}`;
+      if (wash) {
+        wash.style.opacity = `${focus * (1 - setting) * (0.72 + beat * 0.55)}`;
+      }
 
       const skyIn = smooth(span(t, T_WARP, T_SET));
       const night = nightRef.current;
@@ -358,7 +398,7 @@ export default function MountainSkyline({
       }
 
       /* ---- ridges ------------------------------------------------- */
-      const rise = span(t, T_WARP * 0.66, T_SETTLE + 0.8);
+      const rise = span(t, T_WARP * 0.82, T_SETTLE + 0.8);
       const travel = [44, 60, 76];
       const eases = [
         easeOut(clamp01(rise * 1.16)),
@@ -450,8 +490,8 @@ export default function MountainSkyline({
           <defs>
             {/* Rock tone: paler toward the crest where the sky lights it. */}
             <linearGradient id={`rock${i}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor={['#22503e', '#183a2d', '#102a20'][i]} />
-              <stop offset="1" stopColor={['#14332772', '#0d241c', '#050f0b'][i]} />
+              <stop offset="0" stopColor={['#2c4e3d', '#1f3b2e', '#122418'][i]} />
+              <stop offset="1" stopColor={['#16291f', '#0e1d15', '#05100a'][i]} />
             </linearGradient>
             {/* Snow caps. The band has to die out just below the peak line
                 or it blankets the whole range and the near ridges wash pale —
@@ -459,27 +499,55 @@ export default function MountainSkyline({
             <linearGradient id={`snow${i}`} x1="0" y1="0" x2="0" y2="1">
               <stop
                 offset={SNOW[i].start}
-                stopColor="#eafff6"
+                stopColor="#e6f2ea"
                 stopOpacity={SNOW[i].opacity}
               />
               <stop
                 offset={(SNOW[i].start + SNOW[i].end) / 2}
-                stopColor="#d4f7e6"
+                stopColor="#d2e4d9"
                 stopOpacity={SNOW[i].opacity * 0.22}
               />
-              <stop offset={SNOW[i].end} stopColor="#d4f7e6" stopOpacity="0" />
+              <stop offset={SNOW[i].end} stopColor="#d2e4d9" stopOpacity="0" />
             </linearGradient>
             {/* Aerial perspective: distance fills with sky-coloured haze. */}
             <linearGradient id={`haze${i}`} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0" stopColor="#0a2a1e" stopOpacity="0" />
               <stop offset="1" stopColor="#0a2a1e" stopOpacity={[0.62, 0.4, 0.2][i]} />
             </linearGradient>
+            {/* Each slope face is a quad dropped to the base, so left alone
+                they stack up as vertical columns. Fading them out below the
+                crest leaves only the lit upper slopes reading as relief. */}
+            <linearGradient id={`facetFade${i}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#fff" stopOpacity="1" />
+              <stop offset="0.24" stopColor="#fff" stopOpacity="0.55" />
+              <stop offset="0.52" stopColor="#fff" stopOpacity="0" />
+            </linearGradient>
+            <mask id={`facetMask${i}`}>
+              <rect
+                x="0"
+                y="0"
+                width={RIDGE_WIDTH}
+                height={ridge.height}
+                fill={`url(#facetFade${i})`}
+              />
+            </mask>
             <clipPath id={`clip${i}`}>
               <path d={ridge.path} />
             </clipPath>
           </defs>
 
           <path d={ridge.path} fill={`url(#rock${i})`} />
+          {/* Slope faces, lit by how squarely each turns toward the sky —
+              this is what gives the range relief rather than a flat cut-out. */}
+          <g mask={`url(#facetMask${i})`}>
+            {ridge.facets.map((facet) => (
+              <path
+                key={facet.shade}
+                d={facet.d}
+                fill={mixHex(FACET_DARK[i], FACET_LIT[i], facet.shade)}
+              />
+            ))}
+          </g>
           <g clipPath={`url(#clip${i})`}>
             <rect
               x="0"
