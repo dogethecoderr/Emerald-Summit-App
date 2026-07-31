@@ -1,14 +1,35 @@
 import { useEffect, useRef } from 'react';
+import { RIDGES, RIDGE_WIDTH } from './skyGeometry';
 
 const TAU = Math.PI * 2;
 const STAR_COUNT = 900;
 
 /* Timeline, in seconds. Each mark is where that beat *finishes*. */
-const T_WARP = 1.8; // hyperspace at full tilt
-const T_SETTLE = 2.9; // slowing; stars fall back, sun resolves, ridges rise
-const T_PULSE = 4.7; // sun radiates and shrinks, three decaying beats
-const T_SET = 5.8; // sun dims and drops behind the range — hero copy starts
-const T_END = 6.5; // stars finished flickering back in
+const T_WARP = 3.4; // hyperspace at full tilt
+const T_SETTLE = 6.0; // slowing; stars fall back, sun resolves, ridges rise
+const T_PULSE = 10.2; // sun radiates and shrinks, three decaying beats
+const T_SET = 13.0; // sun dims and drops behind the range — hero copy starts
+const T_END = 14.8; // stars finished flickering back in
+
+/** Where in the pulse window each beat crests, and how long its ring lives. */
+const BEATS = [0.0833, 0.4167, 0.75];
+const RING_LIFE = 2.9;
+
+/**
+ * Where each range's snow band sits, as a fraction of its own box. Tuned to
+ * each ridge's peak line (far peaks sit lower in their box than near ones).
+ */
+const SNOW = [
+  { start: 0.2, end: 0.36, opacity: 0.3 },
+  { start: 0.15, end: 0.32, opacity: 0.34 },
+  { start: 0.08, end: 0.26, opacity: 0.4 },
+];
+
+/** Alpha/width buckets for the star batching. */
+const ALPHA_STEPS = 14;
+const WIDTH_STEPS = 4;
+const WIDTH_MIN = 0.8;
+const WIDTH_MAX = 3.8;
 
 const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -18,24 +39,15 @@ const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
 /** Normalised progress through a window of the timeline. */
 const span = (t: number, a: number, b: number) => clamp01((t - a) / (b - a));
 
-/** Alpha/width buckets — see the batching note in the draw loop. */
-const ALPHA_STEPS = 14;
-const WIDTH_STEPS = 4;
-const WIDTH_MIN = 0.8;
-const WIDTH_MAX = 3.8;
-
 interface Star {
   slot: number;
   angle: number;
-  /** Cached direction, refreshed only when the star respawns. */
   cos: number;
   sin: number;
   dist: number;
   speed: number;
   bright: number;
-  /** Settled dot size — varied so the finished sky has depth. */
   size: number;
-  /** Twinkle phase + rate, and how late this star returns at the end. */
   phase: number;
   rate: number;
   delay: number;
@@ -46,19 +58,17 @@ function slotAngle(slot: number): number {
 }
 
 interface MountainSkylineProps {
-  /** Play the arrival sequence; otherwise render the settled night sky. */
   playIntro?: boolean;
-  /** Flip to true to jump straight to the settled state. */
   skip?: boolean;
-  /** Fires when the sun is down and the hero copy should start arriving. */
   onCueContent?: () => void;
 }
 
 /**
  * The hero's night sky, and — on a first visit — the arrival sequence that
- * lands on it. Stars, sun and ridges all live in this one layer on a single
- * clock, so the sequence *becomes* the finished sky instead of dissolving
- * into a separate copy of it.
+ * lands on it. Stars, sun and ridges share one clock in one layer, so the
+ * sequence *becomes* the finished sky rather than dissolving into a copy of
+ * it. The sun is drawn on the canvas, which sits under the ridge SVGs, so it
+ * genuinely passes behind the range as it sets.
  */
 export default function MountainSkyline({
   playIntro = false,
@@ -68,14 +78,11 @@ export default function MountainSkyline({
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const nightRef = useRef<HTMLDivElement>(null);
-  const sunRef = useRef<HTMLDivElement>(null);
   const washRef = useRef<HTMLDivElement>(null);
   const glowRef = useRef<HTMLDivElement>(null);
   const fadeRef = useRef<HTMLDivElement>(null);
-  const backRidgeRef = useRef<SVGSVGElement>(null);
-  const midRidgeRef = useRef<SVGSVGElement>(null);
-  const frontRidgeRef = useRef<SVGSVGElement>(null);
-  const rimRef = useRef<SVGPolylineElement>(null);
+  const ridgeRefs = useRef<(SVGSVGElement | null)[]>([]);
+  const crestRefs = useRef<(SVGPathElement | null)[]>([]);
 
   const cuedRef = useRef(false);
   const onCueRef = useRef(onCueContent);
@@ -114,15 +121,12 @@ export default function MountainSkyline({
       sin: 0,
       dist: Math.sqrt(Math.random()) * radius(),
       speed: 0.45 + Math.random() * 0.55,
-      // Skewed so the sky is mostly faint with a scattering of bright ones —
-      // an even field reads as dust rather than stars.
       bright: 0.18 + Math.pow(Math.random(), 2.2) * 0.82,
       size: 1.3 + Math.pow(Math.random(), 1.8) * 2.4,
       phase: Math.random() * TAU,
       rate: 1.6 + Math.random() * 2.2,
       delay: Math.random(),
     }));
-    /** Point a star down a fresh angle, caching its direction. */
     const aim = (s: Star) => {
       s.angle = slotAngle(s.slot);
       s.cos = Math.cos(s.angle);
@@ -130,18 +134,108 @@ export default function MountainSkyline({
     };
     stars.forEach(aim);
 
-    // Reused across frames so the batching allocates nothing per frame.
     const paths: (Path2D | null)[] = new Array(ALPHA_STEPS * WIDTH_STEPS).fill(
       null,
     );
+    const beatTimes = BEATS.map((b) => T_SETTLE + (T_PULSE - T_SETTLE) * b);
 
     const start = performance.now();
     ctx.lineCap = 'round';
     let raf = 0;
-    const ridges = [backRidgeRef, midRidgeRef, frontRidgeRef];
+
+    /** Disc, corona, rays and the rings each beat throws off. */
+    const drawSun = (
+      cx: number,
+      cy: number,
+      r: number,
+      alpha: number,
+      energy: number,
+      t: number,
+    ) => {
+      if (alpha <= 0.001 || r <= 0) return;
+
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+
+      // Corona: the wide, soft halo the disc sits inside.
+      const corona = ctx.createRadialGradient(cx, cy, r * 0.55, cx, cy, r * 3.4);
+      corona.addColorStop(0, `rgba(120, 245, 200, ${0.34 * alpha})`);
+      corona.addColorStop(0.32, `rgba(52, 211, 153, ${0.16 * alpha})`);
+      corona.addColorStop(0.68, `rgba(16, 150, 105, ${0.05 * alpha})`);
+      corona.addColorStop(1, 'rgba(16, 150, 105, 0)');
+      ctx.fillStyle = corona;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 3.4, 0, TAU);
+      ctx.fill();
+
+      // Radiation: spokes of light, longer and brighter on each beat.
+      const spokes = 72;
+      ctx.lineCap = 'butt';
+      for (let i = 0; i < spokes; i++) {
+        const a = (i / spokes) * TAU + t * 0.06;
+        // Two incommensurate waves so no spoke pattern repeats visibly.
+        const n =
+          0.5 + 0.28 * Math.sin(i * 2.399 + t * 1.1) + 0.22 * Math.sin(i * 1.17 - t * 0.7);
+        const inner = r * 1.02;
+        const outer = r * (1.12 + (0.5 + 1.15 * energy) * n);
+        const fade = (0.06 + 0.44 * energy) * n * alpha;
+        if (fade <= 0.004) continue;
+
+        const cos = Math.cos(a);
+        const sin = Math.sin(a);
+        const grad = ctx.createLinearGradient(
+          cx + cos * inner,
+          cy + sin * inner,
+          cx + cos * outer,
+          cy + sin * outer,
+        );
+        grad.addColorStop(0, `rgba(190, 255, 226, ${fade})`);
+        grad.addColorStop(1, 'rgba(52, 211, 153, 0)');
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = r * (0.035 + 0.05 * n);
+        ctx.beginPath();
+        ctx.moveTo(cx + cos * inner, cy + sin * inner);
+        ctx.lineTo(cx + cos * outer, cy + sin * outer);
+        ctx.stroke();
+      }
+      ctx.lineCap = 'round';
+
+      // Shockwave rings — the radiation mark each beat leaves behind.
+      for (const b of beatTimes) {
+        const age = t - b;
+        if (age < 0 || age > RING_LIFE) continue;
+        const k = age / RING_LIFE;
+        const ringR = r * (1.0 + easeOut(k) * 2.6);
+        const ringA = Math.pow(1 - k, 1.7) * 0.6 * alpha;
+        if (ringA <= 0.004) continue;
+        ctx.strokeStyle = `rgba(190, 255, 226, ${ringA})`;
+        ctx.lineWidth = Math.max(0.8, r * 0.07 * (1 - k));
+        ctx.beginPath();
+        ctx.arc(cx, cy, ringR, 0, TAU);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+
+      // The disc. A smooth ramp from centre to edge just reads as a shaded
+      // ball, so the core is held flat and blown out to white and the drop to
+      // the limb is quick — light too bright to look at, not a sphere.
+      const disc = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+      disc.addColorStop(0, `rgba(255, 255, 255, ${alpha})`);
+      disc.addColorStop(0.34, `rgba(255, 255, 255, ${alpha})`);
+      disc.addColorStop(0.5, `rgba(226, 255, 243, ${alpha})`);
+      disc.addColorStop(0.68, `rgba(167, 243, 208, ${alpha})`);
+      disc.addColorStop(0.84, `rgba(52, 211, 153, ${alpha})`);
+      disc.addColorStop(0.95, `rgba(16, 185, 129, ${alpha})`);
+      disc.addColorStop(0.99, `rgba(6, 120, 85, ${0.85 * alpha})`);
+      disc.addColorStop(1, 'rgba(6, 120, 85, 0)');
+      ctx.fillStyle = disc;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, TAU);
+      ctx.fill();
+    };
 
     const draw = (now: number) => {
-      // Skipping (or a return visit) parks the clock at the settled end.
       const live = playRef.current && !skipRef.current;
       const elapsed = (now - start) / 1000;
       const t = live ? elapsed : T_END + elapsed;
@@ -158,13 +252,11 @@ export default function MountainSkyline({
       /* ---- stars -------------------------------------------------- */
       const accel = span(t, 0, T_WARP);
       const decel = smooth(span(t, T_WARP, T_SETTLE));
-      // Ramps hard, then eases to a standstill rather than cutting out.
       const warp = (0.1 + Math.pow(accel, 3) * 78) * (1 - easeOut(decel));
 
-      // Under warp the frame is veiled in black rather than cleared, which is
-      // what smears the streaks into trails. Once we've stopped we clear
-      // instead — an opaque veil would sit on top of the night sky and hide
-      // it, leaving the settled hero flat black.
+      // Under warp the frame is veiled rather than cleared, which is what
+      // smears the streaks into trails. Once stopped we clear instead — an
+      // opaque veil would sit on top of the night sky and hide it.
       if (decel < 1) {
         ctx.fillStyle = `rgba(0, 0, 0, ${lerp(1 - accel * 0.78, 1, decel)})`;
         ctx.fillRect(0, 0, w, h);
@@ -172,15 +264,12 @@ export default function MountainSkyline({
         ctx.clearRect(0, 0, w, h);
       }
 
-      // Stars fall back behind the sun, then flicker home once it's gone.
-      const recede = smooth(span(t, T_WARP * 0.75, T_SETTLE));
-      const back = smooth(span(t, T_SET - 0.2, T_END));
+      const recede = smooth(span(t, T_WARP * 0.8, T_SETTLE));
+      const back = smooth(span(t, T_SET - 0.4, T_END));
       const hole = maxDist * 0.08 * smooth(span(t, 0, T_SETTLE * 0.6));
 
-      // Nine hundred individually-stroked stars means 900 canvas state
-      // changes a frame, which will not hold 60fps. Instead every star is
-      // binned by rounded alpha and width and the whole bin is stroked as one
-      // path — a few dozen draw calls rather than hundreds.
+      // Binned by rounded alpha and width, then stroked a bin at a time —
+      // a few dozen draw calls rather than one per star.
       paths.fill(null);
       const streakW = 0.8 + accel * 1.9;
       const dim = lerp(1, 0.1, recede);
@@ -196,7 +285,6 @@ export default function MountainSkyline({
         const from = Math.max(prev, hole);
         if (s.dist < hole) continue;
 
-        // Staggered return so the sky populates rather than switching on.
         const mine = clamp01((back - s.delay * 0.55) / 0.45);
         const twinkle = 0.55 + 0.45 * Math.sin(t * s.rate + s.phase);
         const alpha = s.bright * lerp(dim, twinkle, mine);
@@ -204,7 +292,6 @@ export default function MountainSkyline({
         const ai = Math.round(alpha * (ALPHA_STEPS - 1));
         if (ai <= 0) continue;
 
-        // Thin streaks under warp, fattening into real dots once settled.
         const width = lerp(streakW, s.size, decel);
         const wi = Math.max(
           0,
@@ -230,37 +317,33 @@ export default function MountainSkyline({
       for (let key = 0; key < paths.length; key++) {
         const path = paths[key];
         if (!path) continue;
-        const ai = Math.floor(key / WIDTH_STEPS);
-        const wi = key % WIDTH_STEPS;
-        ctx.strokeStyle = `rgba(255, 255, 255, ${ai / (ALPHA_STEPS - 1)})`;
+        ctx.strokeStyle = `rgba(255, 255, 255, ${
+          Math.floor(key / WIDTH_STEPS) / (ALPHA_STEPS - 1)
+        })`;
         ctx.lineWidth =
-          WIDTH_MIN + (wi / (WIDTH_STEPS - 1)) * (WIDTH_MAX - WIDTH_MIN);
+          WIDTH_MIN + ((key % WIDTH_STEPS) / (WIDTH_STEPS - 1)) * (WIDTH_MAX - WIDTH_MIN);
         ctx.stroke(path);
       }
 
       /* ---- sun ---------------------------------------------------- */
-      // Diffuse glow we close on, pulling into a defined disc.
-      const focus = smooth(span(t, T_WARP * 0.5, T_SETTLE));
+      const focus = smooth(span(t, T_WARP * 0.72, T_SETTLE));
       const setting = smooth(span(t, T_PULSE, T_SET));
-      let scale = lerp(0.32, 1, easeOut(focus));
 
+      // Three beats, each smaller than the last — a pulse settling.
+      let beat = 0;
       if (t > T_SETTLE) {
-        // Three beats, each smaller than the last — a pulse settling.
         const p = span(t, T_SETTLE, T_PULSE);
-        scale *= 1 + Math.sin(p * TAU * 3) * 0.17 * (1 - p);
+        beat = Math.max(0, Math.sin(p * TAU * 3)) * (1 - p);
       }
 
-      const sun = sunRef.current;
-      if (sun) {
-        sun.style.opacity = `${focus * (1 - setting * 0.96)}`;
-        sun.style.filter = `blur(${lerp(46, 0, focus)}px)`;
-        sun.style.transform = `translate(-50%, -50%) translateY(${
-          setting * 46
-        }vh) scale(${scale})`;
-      }
+      const baseR = Math.min(w, h) * 0.15;
+      const sunR = baseR * lerp(0.3, 1, easeOut(focus)) * (1 + beat * 0.16);
+      const sunY = lerp(h * 0.42, h * 1.1, setting);
+      const sunA = focus * (1 - setting * 0.92);
+      drawSun(cx, sunY, sunR, sunA, beat, t);
 
       const wash = washRef.current;
-      if (wash) wash.style.opacity = `${focus * (1 - setting) * 0.85}`;
+      if (wash) wash.style.opacity = `${focus * (1 - setting) * 0.8}`;
 
       const skyIn = smooth(span(t, T_WARP, T_SET));
       const night = nightRef.current;
@@ -268,8 +351,6 @@ export default function MountainSkyline({
       const fade = fadeRef.current;
       if (fade) fade.style.opacity = `${skyIn}`;
 
-      // The hero's resting glow, brought up only once the sun is gone so the
-      // two never fight — then left breathing forever.
       const glow = glowRef.current;
       if (glow) {
         const up = smooth(span(t, T_PULSE, T_END));
@@ -277,17 +358,16 @@ export default function MountainSkyline({
       }
 
       /* ---- ridges ------------------------------------------------- */
-      // Front travels furthest and lands last: parallax depth.
-      const rise = span(t, T_WARP * 0.55, T_SETTLE + 0.3);
-      const travel = [46, 62, 78];
+      const rise = span(t, T_WARP * 0.66, T_SETTLE + 0.8);
+      const travel = [44, 60, 76];
       const eases = [
-        easeOut(clamp01(rise * 1.15)),
-        easeOut(clamp01(rise * 1.06)),
+        easeOut(clamp01(rise * 1.16)),
+        easeOut(clamp01(rise * 1.07)),
         easeOut(rise),
       ];
-      const drifts = [Math.sin(t * 0.24) * 10, Math.sin(t * 0.3 + 1.1) * -12, 0];
-      for (let i = 0; i < ridges.length; i++) {
-        const el = ridges[i].current;
+      const drifts = [Math.sin(t * 0.16) * 9, Math.sin(t * 0.21 + 1.1) * -11, 0];
+      for (let i = 0; i < 3; i++) {
+        const el = ridgeRefs.current[i];
         if (!el) continue;
         el.style.transform = `translate(${drifts[i]}px, ${
           (1 - eases[i]) * travel[i]
@@ -295,11 +375,13 @@ export default function MountainSkyline({
       }
 
       // Crest catches the light as the sun grazes it, then goes out.
-      const rim = Math.sin(span(t, T_PULSE - 0.35, T_SET + 0.25) * Math.PI);
-      const rimEl = rimRef.current;
-      if (rimEl) {
-        rimEl.style.opacity = `${0.5 + rim * 0.5}`;
-        rimEl.style.strokeWidth = `${2 + rim * 2.6}`;
+      const rim = Math.sin(span(t, T_PULSE - 0.5, T_SET + 0.4) * Math.PI);
+      for (let i = 0; i < 3; i++) {
+        const el = crestRefs.current[i];
+        if (!el) continue;
+        const weight = i === 2 ? 1 : 0.45;
+        el.style.opacity = `${(0.28 + rim * 0.62) * weight}`;
+        el.style.strokeWidth = `${1.4 + rim * 2.4 * weight}`;
       }
 
       raf = requestAnimationFrame(draw);
@@ -328,6 +410,7 @@ export default function MountainSkyline({
         }}
       />
 
+      {/* stars and sun — under the ridges, so the sun sets behind them */}
       <canvas ref={canvasRef} className="absolute inset-0" />
 
       {/* broad emerald wash the sun throws across the sky */}
@@ -336,12 +419,14 @@ export default function MountainSkyline({
         className="absolute inset-0"
         style={{
           opacity: 0,
+          // Runs all the way out — stopping short leaves a visible ellipse
+          // edge against the black.
           background:
-            'radial-gradient(70% 55% at 50% 46%, rgba(34,197,94,0.30) 0%, rgba(12,122,85,0.14) 45%, transparent 76%)',
+            'radial-gradient(115% 85% at 50% 44%, rgba(34,197,94,0.24) 0%, rgba(20,150,105,0.13) 30%, rgba(12,122,85,0.05) 58%, transparent 100%)',
         }}
       />
 
-      {/* resting emerald glow behind the summit, as the hero has always had */}
+      {/* resting emerald glow behind the summit */}
       <div
         ref={glowRef}
         className="absolute left-1/2 top-[18%] h-[420px] w-[620px] max-w-[90vw] -translate-x-1/2 rounded-full blur-3xl"
@@ -352,69 +437,82 @@ export default function MountainSkyline({
         }}
       />
 
-      {/* the sun — sits under the ridges so it can set behind them.
-          Sized off the smaller axis so a narrow window doesn't swallow it. */}
-      <div
-        ref={sunRef}
-        className="absolute left-1/2 top-[46%] h-[min(30vh,42vw)] w-[min(30vh,42vw)] rounded-full"
-        style={{
-          opacity: 0,
-          transform: 'translate(-50%, -50%) scale(0.32)',
-          background:
-            'radial-gradient(circle, #f0fff8 0%, #a7f3d0 26%, #34d399 46%, rgba(16,185,129,0.55) 62%, rgba(12,122,85,0.18) 78%, transparent 88%)',
-        }}
-      />
+      {RIDGES.map((ridge, i) => (
+        <svg
+          key={i}
+          ref={(el) => {
+            ridgeRefs.current[i] = el;
+          }}
+          className={`absolute inset-x-0 bottom-0 w-full ${ridge.heightClass}`}
+          viewBox={`0 0 ${RIDGE_WIDTH} ${ridge.height}`}
+          preserveAspectRatio="none"
+        >
+          <defs>
+            {/* Rock tone: paler toward the crest where the sky lights it. */}
+            <linearGradient id={`rock${i}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor={['#22503e', '#183a2d', '#102a20'][i]} />
+              <stop offset="1" stopColor={['#14332772', '#0d241c', '#050f0b'][i]} />
+            </linearGradient>
+            {/* Snow caps. The band has to die out just below the peak line
+                or it blankets the whole range and the near ridges wash pale —
+                only the tips should poke into it, saddles stay bare rock. */}
+            <linearGradient id={`snow${i}`} x1="0" y1="0" x2="0" y2="1">
+              <stop
+                offset={SNOW[i].start}
+                stopColor="#eafff6"
+                stopOpacity={SNOW[i].opacity}
+              />
+              <stop
+                offset={(SNOW[i].start + SNOW[i].end) / 2}
+                stopColor="#d4f7e6"
+                stopOpacity={SNOW[i].opacity * 0.22}
+              />
+              <stop offset={SNOW[i].end} stopColor="#d4f7e6" stopOpacity="0" />
+            </linearGradient>
+            {/* Aerial perspective: distance fills with sky-coloured haze. */}
+            <linearGradient id={`haze${i}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#0a2a1e" stopOpacity="0" />
+              <stop offset="1" stopColor="#0a2a1e" stopOpacity={[0.62, 0.4, 0.2][i]} />
+            </linearGradient>
+            <clipPath id={`clip${i}`}>
+              <path d={ridge.path} />
+            </clipPath>
+          </defs>
 
-      <svg
-        ref={backRidgeRef}
-        className="absolute inset-x-0 bottom-0 h-[46%] w-full"
-        viewBox="0 0 1440 320"
-        preserveAspectRatio="none"
-      >
-        <polygon
-          points="0,320 0,190 180,120 340,200 520,90 700,190 860,110 1040,210 1220,130 1440,200 1440,320"
-          fill="#0e3527"
-          opacity="0.75"
-        />
-      </svg>
+          <path d={ridge.path} fill={`url(#rock${i})`} />
+          <g clipPath={`url(#clip${i})`}>
+            <rect
+              x="0"
+              y="0"
+              width={RIDGE_WIDTH}
+              height={ridge.height}
+              fill={`url(#snow${i})`}
+            />
+            <rect
+              x="0"
+              y="0"
+              width={RIDGE_WIDTH}
+              height={ridge.height}
+              fill={`url(#haze${i})`}
+            />
+          </g>
+          <path
+            ref={(el) => {
+              crestRefs.current[i] = el;
+            }}
+            d={ridge.crest}
+            fill="none"
+            stroke="#34D399"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            opacity="0.3"
+            vectorEffect="non-scaling-stroke"
+          />
+        </svg>
+      ))}
 
-      <svg
-        ref={midRidgeRef}
-        className="absolute inset-x-0 bottom-0 h-[38%] w-full"
-        viewBox="0 0 1440 260"
-        preserveAspectRatio="none"
-      >
-        <polygon
-          points="0,260 0,160 220,90 400,170 640,60 860,160 1080,80 1280,170 1440,110 1440,260"
-          fill="#123c2c"
-          opacity="0.9"
-        />
-      </svg>
-
-      <svg
-        ref={frontRidgeRef}
-        className="absolute inset-x-0 bottom-0 h-[30%] w-full"
-        viewBox="0 0 1440 210"
-        preserveAspectRatio="none"
-      >
-        <polygon
-          points="0,210 0,140 260,60 480,150 720,30 960,150 1180,70 1440,140 1440,210"
-          fill="#0a2a1f"
-        />
-        <polyline
-          ref={rimRef}
-          points="0,140 260,60 480,150 720,30 960,150 1180,70 1440,140"
-          fill="none"
-          stroke="#34D399"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          opacity="0.55"
-        />
-      </svg>
-
-      {/* soft fade into the light page below — held back during the jump, or
-          it reads as a white band across the bottom of the void */}
+      {/* soft fade into the light page below */}
       <div
         ref={fadeRef}
         className="absolute inset-x-0 bottom-0 h-24"
