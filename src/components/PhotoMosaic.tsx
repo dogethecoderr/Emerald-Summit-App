@@ -26,6 +26,9 @@ function Tile({ src, className }: { src: string; className: string }) {
           alt="Emerald Summit"
           className="absolute inset-0 h-full w-full object-cover"
           loading="lazy"
+          // Hands the JPEG decode to the browser's own thread instead of
+          // letting it land on the main thread mid-scroll.
+          decoding="async"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -49,6 +52,35 @@ export default function PhotoMosaic({ className = '' }: { className?: string }) 
     }, ROTATE_MS);
     return () => clearInterval(id);
   }, [reduceMotion]);
+
+  // Fetch and decode the next trio while the browser is idle, so the swap
+  // never pays for a decode at the moment it needs to paint.
+  useEffect(() => {
+    if (reduceMotion) return;
+    const next = PHOTO_SETS[(index + 1) % PHOTO_SETS.length];
+    const idle: typeof requestIdleCallback | undefined =
+      typeof requestIdleCallback === 'function' ? requestIdleCallback : undefined;
+
+    let cancelled = false;
+    const warm = () => {
+      if (cancelled) return;
+      for (const src of next) {
+        const img = new Image();
+        img.decoding = 'async';
+        img.src = src;
+      }
+    };
+
+    const handle = idle ? idle(warm) : setTimeout(warm, 400);
+    return () => {
+      cancelled = true;
+      if (idle && typeof cancelIdleCallback === 'function') {
+        cancelIdleCallback(handle as number);
+      } else {
+        clearTimeout(handle as ReturnType<typeof setTimeout>);
+      }
+    };
+  }, [index, reduceMotion]);
 
   const [large, topRight, bottomRight] = PHOTO_SETS[index];
 
