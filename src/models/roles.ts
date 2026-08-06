@@ -1,4 +1,5 @@
-// Ported from flutter/lib/core/models/user_role.dart
+// User roles for the Emerald Summit web prototype. Mirrors the roles used in
+// the separate Emerald Summit Flutter app so the two stay conceptually aligned.
 import {
   GraduationCap,
   HeartHandshake,
