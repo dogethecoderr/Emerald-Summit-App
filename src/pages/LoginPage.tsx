@@ -4,10 +4,9 @@ import { ChevronLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { SIGN_IN_ROLES } from '../models/roles';
 import {
-  getCurrentProfile,
-  needsProfileSetup,
   signInWithGoogle,
   signInWithLinkedIn,
+  signInWithBypass,
 } from '../services/auth';
 import GoogleIcon from '../components/GoogleIcon';
 import LinkedInIcon from '../components/LinkedInIcon';
@@ -38,16 +37,13 @@ export default function LoginPage() {
     );
   }
 
-  const finishSignIn = async () => {
-    const profile = await getCurrentProfile();
-    navigate(needsProfileSetup(profile) ? '/profile' : '/home', { replace: true });
-  };
+
 
   const handleGoogle = async () => {
     setIsLoading(true);
     try {
       await signInWithGoogle(role.name);
-      await finishSignIn();
+      // signInWithGoogle redirects, so code below here won't run.
     } catch (error) {
       toast.error(`Google sign-in failed: ${error}`);
       setIsLoading(false);
@@ -58,11 +54,16 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       await signInWithLinkedIn(role.name);
-      await finishSignIn();
+      // Redirects, so this won't be reached usually.
     } catch (error) {
       toast.error(`LinkedIn sign-in failed: ${error}`);
       setIsLoading(false);
     }
+  };
+
+  const handleBypass = () => {
+    signInWithBypass(role.name);
+    navigate('/home', { replace: true });
   };
 
   return (
@@ -145,9 +146,17 @@ export default function LoginPage() {
                   <span className="ml-2">Continue with LinkedIn</span>
                 </Button>
 
+                <Button
+                  variant="outline"
+                  className="mt-3 h-12 w-full rounded-xl border-emerald-glow/40 bg-emerald/10 text-[15px] font-semibold text-emerald-mint hover:bg-emerald/20 hover:text-white"
+                  onClick={handleBypass}
+                  disabled={isLoading}
+                >
+                  <span>Bypass Login (Local Demo Mode)</span>
+                </Button>
+
                 <p className="mt-5 text-center text-xs leading-relaxed text-muted-foreground lg:text-left">
-                  Demo mode — sign-in is simulated locally, no password or backend
-                  needed. Your {role.label.toLowerCase()} role will be saved to your
+                  Sign in with your Google account. Your {role.label.toLowerCase()} role will be saved to your
                   profile.
                 </p>
               </div>

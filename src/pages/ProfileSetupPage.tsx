@@ -49,7 +49,7 @@ export default function ProfileSetupPage() {
       if (disciplineName) setSelectedDiscipline(disciplineName);
       setPrefilled(true);
     } else {
-      const metadataName = session?.user.fullName?.trim();
+      const metadataName = session?.user.user_metadata?.full_name?.trim();
       if (metadataName && metadataName.length > 0) {
         setName(metadataName);
       }
@@ -62,7 +62,7 @@ export default function ProfileSetupPage() {
     name.trim().length > 0 && bioWords <= BIO_WORD_LIMIT && !isSaving;
 
   if (!loadingProfile && session == null) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/home" replace />;
   }
 
   if (!loadingProfile && session != null && !needsProfileSetup(profile)) {
@@ -254,17 +254,31 @@ export default function ProfileSetupPage() {
             </div>
           </div>
 
-          <Button
-            className="glow-emerald h-12 w-full rounded-xl bg-primary text-[15px] font-semibold hover:bg-emerald"
-            onClick={handleSave}
-            disabled={!canSave}
-          >
-            {isSaving ? (
-              <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-            ) : (
-              'Continue'
-            )}
-          </Button>
+          <div className="flex flex-col gap-3">
+            <Button
+              className="glow-emerald h-12 w-full rounded-xl bg-primary text-[15px] font-semibold hover:bg-emerald"
+              onClick={handleSave}
+              disabled={!canSave}
+            >
+              {isSaving ? (
+                <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+              ) : (
+                'Continue'
+              )}
+            </Button>
+            
+            <Button
+              variant="outline"
+              className="h-12 w-full rounded-xl border-border/80 bg-secondary/30 text-[15px] font-semibold text-muted-foreground hover:bg-accent hover:text-foreground"
+              onClick={async () => {
+                await handleSignOut();
+                navigate('/home');
+              }}
+              disabled={isSaving || isSigningOut}
+            >
+              Bypass to Role Picker
+            </Button>
+          </div>
         </div>
       </div>
     </div>

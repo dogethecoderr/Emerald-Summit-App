@@ -1,12 +1,26 @@
-// Mock auth — a localStorage-backed stand-in for Supabase so the whole
-// frontend runs and is fully testable in the browser with no backend.
-// The public surface mirrors what the pages need; swap the internals for
-// real Supabase auth later without touching the UI.
-
+import { supabase } from '../lib/supabase';
 import type { Person, Visibility } from '../models/people';
 import type { PersonStatus } from '../models/personStatus';
+import type { User } from '@supabase/supabase-js';
 
-export type Profile = Record<string, unknown>;
+export type Profile = {
+  id: string;
+  email: string;
+  name?: string;
+  role?: string;
+  phone?: string;
+  discipline?: string | null;
+  bio?: string;
+  profile_setup_complete: boolean;
+  org?: string;
+  directory_visible?: boolean;
+  email_visible?: Visibility;
+  phone_visible?: Visibility;
+  bio_visible?: Visibility;
+  created_at?: string;
+  updated_at?: string;
+  checked_in_at?: string;
+};
 
 export interface ProfileSettings {
   org: string;
@@ -24,59 +38,8 @@ export const DEFAULT_PROFILE_SETTINGS: ProfileSettings = {
   bioVisible: 'private',
 };
 
-export interface MockUser {
-  id: string;
-  email: string;
-  /** Prefill hint for the profile page (e.g. from a Google account). */
-  fullName?: string;
-}
-
-export interface MockSession {
-  user: MockUser;
-}
-
-const SESSION_KEY = 'mock_session';
-const PROFILE_KEY = 'mock_profiles'; // { [email]: Profile }
 const PENDING_ROLE_KEY = 'pending_user_role';
 
-// Tiny artificial latency so loading states/spinners are exercised.
-const FAKE_LATENCY_MS = 500;
-const wait = (ms = FAKE_LATENCY_MS) => new Promise((r) => setTimeout(r, ms));
-
-// ---- Change notification (AuthContext subscribes to this) ----
-type Listener = () => void;
-const listeners = new Set<Listener>();
-
-export function subscribeAuth(listener: Listener): () => void {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
-}
-
-function emit(): void {
-  listeners.forEach((l) => l());
-}
-
-// ---- Low-level storage helpers ----
-function readJSON<T>(key: string): T | null {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : null;
-  } catch {
-    return null;
-  }
-}
-
-function readProfiles(): Record<string, Profile> {
-  return readJSON<Record<string, Profile>>(PROFILE_KEY) ?? {};
-}
-
-function randomId(): string {
-  return 'u_' + Math.random().toString(36).slice(2, 10);
-}
-
-// ---- Pending role (chosen on the role screen, applied at profile save) ----
 export function savePendingRole(roleName: string): void {
   localStorage.setItem(PENDING_ROLE_KEY, roleName);
 }
@@ -88,89 +51,114 @@ export function takePendingRole(): string | null {
   return value;
 }
 
-// ---- Session ----
-export function getSession(): MockSession | null {
-  return readJSON<MockSession>(SESSION_KEY);
-}
+/** 
+ * Gets the current profile from the public.users table.
+ * If the row doesn't exist yet, it creates it using the pending role if available.
+ */
+export async function getCurrentProfile(user: User): Promise<Profile | null> {
+  let { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', user.id)
+    .single();
 
-function setSession(user: MockUser): void {
-  localStorage.setItem(SESSION_KEY, JSON.stringify({ user }));
-  emit();
-}
-
-/** Instant "email sign-in" — no magic link round-trip in the mock. */
-export async function signInWithEmail(
-  email: string,
-  roleName: string,
-): Promise<void> {
-  await wait();
-  savePendingRole(roleName);
-  const clean = email.trim().toLowerCase();
-  const existing = readProfiles()[clean];
-  setSession({
-    id: (existing?.id as string) ?? randomId(),
-    email: clean,
-  });
-}
-
-/** Instant "Google" sign-in with a friendly per-role demo account. */
-export async function signInWithGoogle(roleName: string): Promise<void> {
-  await wait();
-  savePendingRole(roleName);
-  const email = `demo.${roleName}@gmail.com`;
-  applyRoleToDemoAccount(email, roleName, defaultDemoName(roleName));
-}
-
-/** Instant "LinkedIn" sign-in with a friendly per-role demo account. */
-export async function signInWithLinkedIn(roleName: string): Promise<void> {
-  await wait();
-  savePendingRole(roleName);
-  const email = `demo.${roleName}@linkedin.com`;
-  applyRoleToDemoAccount(email, roleName, defaultDemoName(roleName));
-}
-
-function defaultDemoName(roleName: string): string {
-  switch (roleName) {
-    case 'volunteer':
-      return 'Demo Volunteer';
-    case 'attendee':
-      return 'Demo Attendee';
-    case 'expert':
-      return 'Demo Expert';
-    case 'participant':
-      return 'Demo Student';
-    default:
-      return 'Demo User';
+  if (error && error.code === 'PGRST116') {
+    // Row not found, create one.
+    const pendingRole = takePendingRole() || 'participant';
+    const newProfile = {
+      id: user.id,
+      email: user.email!,
+      name: user.user_metadata?.full_name || 'New User',
+      role: pendingRole,
+      profile_setup_complete: false,
+    };
+    const { data: inserted, error: insertError } = await supabase
+      .from('users')
+      .insert(newProfile)
+      .select('*')
+      .single();
+    
+    if (insertError) {
+      console.error('Failed to create user profile', insertError);
+      return null;
+    }
+    data = inserted;
+  } else if (error) {
+    console.error('Failed to fetch user profile', error);
+    return null;
   }
+
+  // If they have a pending role, and they are not fully set up, we could update their role.
+  const pendingRole = takePendingRole();
+  if (pendingRole && data && !data.profile_setup_complete && data.role !== pendingRole) {
+    const { data: updated, error: updateError } = await supabase
+      .from('users')
+      .update({ role: pendingRole })
+      .eq('id', user.id)
+      .select('*')
+      .single();
+    if (!updateError && updated) {
+      data = updated;
+    }
+  }
+
+  return data as Profile;
 }
 
-/** Upsert the demo profile for this email so the selected role always wins. */
-function applyRoleToDemoAccount(
-  email: string,
-  roleName: string,
-  fallbackName: string,
-): void {
-  const profiles = readProfiles();
-  const existing = profiles[email];
-  const id = (existing?.id as string | undefined) ?? randomId();
-  const name = (existing?.name as string | undefined) ?? fallbackName;
+export function getBypassSession(): any | null {
+  const raw = localStorage.getItem('bypass_session');
+  return raw ? JSON.parse(raw) : null;
+}
 
-  profiles[email] = {
-    ...(existing ?? {}),
-    id,
-    email,
-    name,
-    role: roleName,
-    // Keep an existing completed profile; first-time role accounts still need setup.
-    profile_setup_complete: existing?.profile_setup_complete === true,
+export function getBypassProfile(): Profile | null {
+  const raw = localStorage.getItem('bypass_profile');
+  return raw ? JSON.parse(raw) as Profile : null;
+}
+
+export function signInWithBypass(roleName: string): void {
+  const session = {
+    user: {
+      id: 'bypass_user_id',
+      email: 'bypass@example.com',
+      user_metadata: {
+        full_name: `Bypass ${roleName.charAt(0).toUpperCase() + roleName.slice(1)}`,
+      }
+    }
   };
-  localStorage.setItem(PROFILE_KEY, JSON.stringify(profiles));
+  const profile: Profile = {
+    id: 'bypass_user_id',
+    email: 'bypass@example.com',
+    name: `Bypass ${roleName.charAt(0).toUpperCase() + roleName.slice(1)}`,
+    role: roleName,
+    profile_setup_complete: true,
+  };
+  localStorage.setItem('bypass_session', JSON.stringify(session));
+  localStorage.setItem('bypass_profile', JSON.stringify(profile));
+  
+  // Emit storage event to trigger AuthContext refresh
+  window.dispatchEvent(new Event('storage'));
+}
 
-  setSession({
-    id,
-    email,
-    fullName: name,
+export function clearBypass(): void {
+  localStorage.removeItem('bypass_session');
+  localStorage.removeItem('bypass_profile');
+}
+
+export async function signInWithGoogle(roleName: string): Promise<void> {
+  savePendingRole(roleName);
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: window.location.origin + '/home',
+    },
   });
+  if (error) throw error;
+}
+
+export async function signInWithLinkedIn(roleName: string): Promise<void> {
+  savePendingRole(roleName);
+  // Not implemented in DB by default, but left for compatibility
+  throw new Error('LinkedIn login is currently not supported with the real backend.');
 }
 
 export interface SaveProfileInput {
@@ -183,6 +171,58 @@ export interface SaveProfileInput {
   emailVisible?: Visibility;
   phoneVisible?: Visibility;
   bioVisible?: Visibility;
+}
+
+export async function saveProfile(input: SaveProfileInput): Promise<void> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('Not signed in.');
+
+  const updatePayload: any = {
+    name: input.name,
+    profile_setup_complete: true,
+  };
+  
+  if (input.phone) updatePayload.phone = input.phone;
+  if (input.discipline) updatePayload.discipline = input.discipline;
+  if (input.bio) updatePayload.bio = input.bio;
+
+  const { error } = await supabase
+    .from('users')
+    .update(updatePayload)
+    .eq('id', session.user.id);
+    
+  if (error) throw error;
+}
+
+export function needsProfileSetup(profile: Profile | null): boolean {
+  if (profile == null) return true;
+  return profile.profile_setup_complete !== true;
+}
+
+export async function updateProfileSettings(
+  input: Partial<SaveProfileInput>,
+): Promise<void> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('Not signed in.');
+  
+  const payload: any = {};
+  if (input.name !== undefined) payload.name = input.name;
+  if (input.phone !== undefined) payload.phone = input.phone;
+  if (input.discipline !== undefined) payload.discipline = input.discipline;
+  if (input.bio !== undefined) payload.bio = input.bio;
+
+  const { error } = await supabase
+    .from('users')
+    .update(payload)
+    .eq('id', session.user.id);
+
+  if (error) throw error;
+}
+
+export async function signOut(): Promise<void> {
+  await supabase.auth.signOut();
+  clearBypass();
+  localStorage.removeItem(PENDING_ROLE_KEY);
 }
 
 function settingsFromProfile(profile: Profile | null | undefined): ProfileSettings {
@@ -217,7 +257,6 @@ function getInitials(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-/** Convert a saved profile into a directory Person card model. */
 export function profileToPerson(profile: Profile): Person {
   const settings = getProfileSettings(profile);
   const roleName = (profile.role as string | undefined) ?? 'participant';
@@ -240,107 +279,4 @@ export function profileToPerson(profile: Profile): Person {
     bioVisible: settings.bioVisible,
     status: 'validated' as PersonStatus,
   };
-}
-
-export async function saveProfile(input: SaveProfileInput): Promise<void> {
-  await wait();
-  const session = getSession();
-  if (session == null) throw new Error('Not signed in.');
-
-  const email = session.user.email;
-  const profiles = readProfiles();
-  const existing = profiles[email];
-
-  let role = existing?.role as string | undefined;
-  const pending = takePendingRole();
-  // Newly chosen role (from the role picker) always wins over a stale profile role.
-  if (pending != null) {
-    role = pending;
-  } else if (role == null) {
-    throw new Error('No role selected. Go back, pick a role, and sign in.');
-  }
-
-  const next: Profile = {
-    ...(existing ?? {}),
-    id: session.user.id,
-    email,
-    role,
-    name: input.name,
-    profile_setup_complete: true,
-  };
-  if (input.phone && input.phone.length > 0) next.phone = input.phone;
-  if (input.discipline) next.discipline = input.discipline;
-  else delete next.discipline;
-  if (input.bio && input.bio.length > 0) next.bio = input.bio;
-  else delete next.bio;
-
-  const settings = settingsFromProfile(existing);
-  next.org = input.org?.trim() || settings.org;
-  next.directory_visible = input.directoryVisible ?? settings.directoryVisible;
-  next.email_visible = input.emailVisible ?? settings.emailVisible;
-  next.phone_visible = input.phoneVisible ?? settings.phoneVisible;
-  next.bio_visible = input.bioVisible ?? settings.bioVisible;
-
-  profiles[email] = next;
-  localStorage.setItem(PROFILE_KEY, JSON.stringify(profiles));
-  emit();
-}
-
-export function needsProfileSetup(profile: Profile | null): boolean {
-  if (profile == null) return true;
-  return profile.profile_setup_complete !== true;
-}
-
-export async function getCurrentProfile(): Promise<Profile | null> {
-  const session = getSession();
-  if (session == null) return null;
-  const profiles = readProfiles();
-  const profile = profiles[session.user.email] ?? null;
-
-  // Migrate renamed roles from earlier demos.
-  if (profile?.role === 'mentor' || profile?.role === 'parent') {
-    const migrated = {
-      ...profile,
-      role: profile.role === 'parent' ? 'attendee' : 'volunteer',
-    };
-    profiles[session.user.email] = migrated;
-    localStorage.setItem(PROFILE_KEY, JSON.stringify(profiles));
-    return migrated;
-  }
-
-  return profile;
-}
-
-export async function updateProfileSettings(
-  input: Partial<SaveProfileInput>,
-): Promise<void> {
-  await wait();
-  const session = getSession();
-  if (session == null) throw new Error('Not signed in.');
-
-  const email = session.user.email;
-  const profiles = readProfiles();
-  const existing = profiles[email];
-  if (existing == null) throw new Error('Profile not found.');
-
-  const name = (input.name ?? (existing.name as string | undefined))?.trim();
-  if (!name) throw new Error('Profile name is required.');
-
-  await saveProfile({
-    name,
-    phone: (input.phone ?? existing.phone) as string | undefined,
-    discipline: (input.discipline ?? existing.discipline) as string | null,
-    bio: (input.bio ?? existing.bio) as string | undefined,
-    org: input.org,
-    directoryVisible: input.directoryVisible,
-    emailVisible: input.emailVisible,
-    phoneVisible: input.phoneVisible,
-    bioVisible: input.bioVisible,
-  });
-}
-
-export async function signOut(): Promise<void> {
-  localStorage.removeItem(SESSION_KEY);
-  localStorage.removeItem(PENDING_ROLE_KEY);
-  emit();
 }

@@ -5,16 +5,17 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { supabase } from '../lib/supabase';
 import {
   getCurrentProfile,
-  getSession,
-  subscribeAuth,
-  type MockSession,
+  getBypassSession,
+  getBypassProfile,
   type Profile,
 } from '../services/auth';
+import type { Session } from '@supabase/supabase-js';
 
 interface AuthContextValue {
-  session: MockSession | null;
+  session: Session | null;
   profile: Profile | null;
   loadingProfile: boolean;
   refreshProfile: () => Promise<void>;
@@ -23,16 +24,31 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<MockSession | null>(() => getSession());
+  const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
 
-  const refreshProfile = async () => {
+  const refreshProfile = async (currentSession?: Session | null) => {
+    const bypassS = getBypassSession();
+    if (bypassS) {
+      setProfile(getBypassProfile());
+      setLoadingProfile(false);
+      return;
+    }
+
+    const s = currentSession !== undefined ? currentSession : session;
+    if (!s?.user) {
+      setProfile(null);
+      setLoadingProfile(false);
+      return;
+    }
+    
     setLoadingProfile(true);
     try {
-      const next = await getCurrentProfile();
+      const next = await getCurrentProfile(s.user);
       setProfile(next);
-    } catch {
+    } catch (err) {
+      console.error(err);
       setProfile(null);
     } finally {
       setLoadingProfile(false);
@@ -40,20 +56,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    // Re-sync whenever the mock store changes (sign in/out, profile save).
+    let mounted = true;
+    
     const sync = () => {
-      const current = getSession();
-      setSession(current);
-      if (current) {
-        refreshProfile();
-      } else {
-        setProfile(null);
+      if (!mounted) return;
+      const bypassS = getBypassSession();
+      if (bypassS) {
+        setSession(bypassS as any);
+        setProfile(getBypassProfile());
         setLoadingProfile(false);
+        return;
       }
+      
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (mounted) {
+          if (getBypassSession()) return; // Avoid race condition if bypass was set
+          setSession(session);
+          refreshProfile(session);
+        }
+      });
     };
 
     sync();
-    return subscribeAuth(sync);
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, newSession) => {
+        if (mounted) {
+          if (getBypassSession()) return;
+          setSession(newSession);
+          refreshProfile(newSession);
+        }
+      }
+    );
+
+    const handleStorage = () => {
+      sync();
+    };
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+      window.removeEventListener('storage', handleStorage);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
